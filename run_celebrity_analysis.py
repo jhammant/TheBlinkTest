@@ -79,7 +79,7 @@ SUBJECTS = [
 ]
 
 
-def search_youtube(query: str, max_results: int = 3) -> list[dict]:
+def search_youtube(query: str, max_results: int = 4) -> list[dict]:
     """Search YouTube for videos."""
     import yt_dlp
 
@@ -87,12 +87,12 @@ def search_youtube(query: str, max_results: int = 3) -> list[dict]:
         "quiet": True,
         "no_warnings": True,
         "simulate": True,
-        "default_search": f"ytsearch{max_results + 2}",
+        "default_search": f"ytsearch{max_results + 3}",
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            results = ydl.extract_info(f"ytsearch{max_results + 2}:{query}", download=False)
+            results = ydl.extract_info(f"ytsearch{max_results + 3}:{query}", download=False)
             videos = []
             for entry in results.get("entries", []):
                 if entry and entry.get("duration", 0) > 30:
@@ -107,10 +107,25 @@ def search_youtube(query: str, max_results: int = 3) -> list[dict]:
         return []
 
 
+# Rate limiting to avoid hammering YouTube
+_last_download_time = 0.0
+DOWNLOAD_DELAY_SECONDS = 10  # Wait at least 10s between downloads
+
+
 def download_and_trim(url: str, output_dir: str, max_seconds: int = 180) -> str | None:
-    """Download video and trim to max_seconds."""
+    """Download video and trim to max_seconds. Rate-limited to avoid YouTube bans."""
+    global _last_download_time
+
+    # Rate limiting
+    elapsed = time.time() - _last_download_time
+    if elapsed < DOWNLOAD_DELAY_SECONDS:
+        wait = DOWNLOAD_DELAY_SECONDS - elapsed
+        print(f"    (rate limit: waiting {wait:.0f}s)", flush=True)
+        time.sleep(wait)
+
     try:
         from blinkcounter.services.youtube import download_video
+        _last_download_time = time.time()
         local_path = download_video(url, output_dir=output_dir)
 
         # Trim if needed
@@ -188,7 +203,7 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"  CELEBRITY BLINK RATE ANALYSIS")
-    print(f"  Analyzing {len(SUBJECTS)} subjects, 2-3 videos each")
+    print(f"  Analyzing {len(SUBJECTS)} subjects, up to 4 videos each")
     print(f"  Results: {report_file}")
     print(f"{'='*60}\n")
 
@@ -202,7 +217,7 @@ def main():
         print(f"\n[{i+1}/{len(SUBJECTS)}] {name}")
         print(f"  Searching YouTube...")
 
-        videos = search_youtube(subject, max_results=2)
+        videos = search_youtube(subject, max_results=4)
         if not videos:
             print(f"  No videos found, skipping")
             all_results[name] = {"error": "No videos found"}
