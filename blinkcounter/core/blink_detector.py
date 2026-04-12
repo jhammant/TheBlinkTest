@@ -88,7 +88,7 @@ def estimate_head_pose(shape_points: np.ndarray) -> dict:
     return {"pitch_ratio": pitch_ratio, "yaw_ratio": yaw_ratio}
 
 
-def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.42, yaw_threshold: float = 0.55) -> bool:
+def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.50, yaw_threshold: float = 0.6) -> bool:
     """Check if face is frontal enough for reliable EAR measurement.
 
     Args:
@@ -97,6 +97,53 @@ def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.42, yaw_threshol
         yaw_threshold: Minimum yaw_ratio (turning sideways reduces this).
     """
     return head_pose["pitch_ratio"] >= pitch_threshold and head_pose["yaw_ratio"] >= yaw_threshold
+
+
+QUALITY_THRESHOLD = 0.4  # Below this, skip the frame for blink detection
+
+
+def calculate_detection_quality(
+    left_ear: float,
+    right_ear: float,
+    head_pose: dict,
+    all_landmarks: np.ndarray,
+) -> float:
+    """Calculate a 0.0-1.0 confidence score for the current frame's detection quality.
+
+    Factors that reduce quality:
+    - EAR asymmetry (face turned sideways)
+    - Head pose away from frontal (pitch/yaw)
+    - Small face size (eye landmarks very close together)
+
+    Args:
+        left_ear: Left eye EAR value.
+        right_ear: Right eye EAR value.
+        head_pose: Dict with 'pitch_ratio' and 'yaw_ratio' from estimate_head_pose().
+        all_landmarks: Array of shape (68, 2) with all landmark points.
+
+    Returns:
+        Quality score between 0.0 and 1.0.
+    """
+    quality = 1.0
+
+    # EAR symmetry: large L/R difference means face is turned
+    symmetry_factor = min(1.0, 1.0 - abs(left_ear - right_ear) / 0.15)
+    quality *= max(0.0, symmetry_factor)
+
+    # Yaw: how frontal the face is horizontally
+    yaw_factor = min(1.0, head_pose["yaw_ratio"] / 0.7)
+    quality *= max(0.0, yaw_factor)
+
+    # Pitch: how frontal the face is vertically
+    pitch_factor = min(1.0, head_pose["pitch_ratio"] / 0.6)
+    quality *= max(0.0, pitch_factor)
+
+    # Face size: distance between outer eye corners (landmarks 36 and 45)
+    eye_width = float(np.linalg.norm(all_landmarks[36] - all_landmarks[45]))
+    size_factor = min(1.0, eye_width / 15.0)
+    quality *= max(0.0, size_factor)
+
+    return quality
 
 
 def check_ear_symmetry(left_ear: float, right_ear: float, max_ratio: float = 3.0) -> bool:
@@ -130,7 +177,7 @@ class BlinkStateMachine:
         self._pre_blink_ear: float = 0.28  # EAR just before blink started
         self._pre_blink_nose_tip: Optional[np.ndarray] = None  # Nose position when blink started
 
-    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None) -> Optional[BlinkEvent]:
+    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None, quality: float = 1.0) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
 
         Args:
@@ -138,10 +185,19 @@ class BlinkStateMachine:
             timestamp: Current timestamp in seconds from video start.
             head_pose: Optional head pose dict from estimate_head_pose().
             nose_tip: Optional 2D position of landmark 30 (nose tip).
+            quality: Detection quality score (0.0-1.0). Frames below
+                QUALITY_THRESHOLD are skipped.
 
         Returns:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
+        # Skip frame if detection quality is too low
+        if quality < QUALITY_THRESHOLD:
+            # Reset blink state if quality drops during an active blink detection
+            if self.state != EyeState.OPEN:
+                self._reset_to_open()
+            return None
+
         # Store latest nose tip for use in _try_complete_blink
         self._current_nose_tip = nose_tip
 
@@ -222,7 +278,7 @@ class BlinkStateMachine:
             and self._current_nose_tip is not None
         ):
             nose_dist = np.linalg.norm(self._current_nose_tip - self._pre_blink_nose_tip)
-            if nose_dist > 10.0:  # 10px allows normal micro-movement during blinks
+            if nose_dist > 5.0:
                 self._reset_to_open()
                 return None
 

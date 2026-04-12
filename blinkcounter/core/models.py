@@ -65,6 +65,7 @@ class Person:
     first_seen_at: float = 0.0  # Seconds from video start
     last_seen_at: float = 0.0
     total_visible_duration: float = 0.0  # Total seconds on screen
+    analyzable_duration: float = 0.0  # Seconds where detection quality was sufficient
 
     @property
     def blink_count(self) -> int:
@@ -72,9 +73,11 @@ class Person:
 
     @property
     def blinks_per_minute(self) -> float:
-        if self.total_visible_duration < 1.0:
+        # Prefer analyzable_duration when available, fall back to total_visible_duration
+        duration = self.analyzable_duration if self.analyzable_duration >= 1.0 else self.total_visible_duration
+        if duration < 1.0:
             return 0.0
-        return (self.blink_count / self.total_visible_duration) * 60.0
+        return (self.blink_count / duration) * 60.0
 
     @property
     def classification(self) -> BlinkClassification:

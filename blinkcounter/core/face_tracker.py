@@ -537,6 +537,7 @@ class FaceTracker:
                     pi.first_seen_at = min(pi.first_seen_at, pj.first_seen_at)
                     pi.last_seen_at = max(pi.last_seen_at, pj.last_seen_at)
                     pi.total_visible_duration += pj.total_visible_duration
+                    pi.analyzable_duration += pj.analyzable_duration
                     merged_away.add(j)
 
                     # Update tracked faces referencing the merged person

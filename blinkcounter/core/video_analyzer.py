@@ -13,7 +13,9 @@ import numpy as np
 
 from blinkcounter.constants import VIDEO_FRAME_SKIP
 from blinkcounter.core.blink_detector import (
+    QUALITY_THRESHOLD,
     BlinkStateMachine,
+    calculate_detection_quality,
     calculate_ear,
     check_ear_symmetry,
     estimate_head_pose,
@@ -242,6 +244,9 @@ class VideoAnalyzer:
 
         # Main thread: consume tracked faces and run blink detection
         frame_number = 0
+        prev_timestamp: dict[str, float] = {}  # person_id -> last timestamp
+        total_analyzable_frames = 0
+        total_quality_frames = 0
         try:
             while True:
                 item = tracked_queue.get()
@@ -260,12 +265,32 @@ class VideoAnalyzer:
                     avg_ear = (left_ear + right_ear) / 2.0
                     head_pose = estimate_head_pose(all_landmarks)
 
+                    # Calculate detection quality score
+                    quality = calculate_detection_quality(
+                        left_ear, right_ear, head_pose, all_landmarks,
+                    )
+
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
-                    event = blink_machines[person.id].update(avg_ear, timestamp, head_pose, nose_tip=all_landmarks[30])
+                    event = blink_machines[person.id].update(
+                        avg_ear, timestamp, head_pose,
+                        nose_tip=all_landmarks[30], quality=quality,
+                    )
                     if event is not None:
                         person.blink_events.append(event)
+
+                    # Track analyzable duration per person
+                    total_quality_frames += 1
+                    if quality >= QUALITY_THRESHOLD:
+                        total_analyzable_frames += 1
+                        if person.id in prev_timestamp:
+                            dt = timestamp - prev_timestamp[person.id]
+                            # Only add reasonable intervals (< 1s) to avoid
+                            # gaps from re-detection after absence
+                            if 0 < dt < 1.0:
+                                person.analyzable_duration += dt
+                    prev_timestamp[person.id] = timestamp
 
                 frames_processed += 1
                 frame_number = fn + 1
@@ -280,6 +305,22 @@ class VideoAnalyzer:
             tracker_thread.join(timeout=5)
 
         persons = tracker.get_persons()
+
+        # Log quality stats
+        if total_quality_frames > 0:
+            analyzable_pct = total_analyzable_frames / total_quality_frames * 100.0
+            logger.info(
+                "Quality stats: %d/%d frames analyzable (%.1f%%)",
+                total_analyzable_frames, total_quality_frames, analyzable_pct,
+            )
+        for p in persons:
+            if p.total_visible_duration > 0:
+                logger.info(
+                    "%s: analyzable %.1fs / visible %.1fs (%.0f%%)",
+                    p.label, p.analyzable_duration, p.total_visible_duration,
+                    p.analyzable_duration / p.total_visible_duration * 100.0
+                    if p.total_visible_duration > 0 else 0.0,
+                )
         if progress_callback:
             progress_callback(1.0, "Analysis complete")
 
