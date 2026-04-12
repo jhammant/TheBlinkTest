@@ -1,0 +1,212 @@
+{
+  "Barack Obama": {
+    "avg_bpm": 12.2,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "President Barack Obama in Conversation with Marc Maron | WTF",
+        "blinks": 11,
+        "bpm": 8.708948816730876,
+        "classification": "Very Low",
+        "analyzable_s": 75.78411745078411
+      },
+      {
+        "title": "Barack Obama BREAKS SILENCE on Trump's ape video, Bad Bunny,",
+        "blinks": 23,
+        "bpm": 15.69586337760911,
+        "classification": "Normal",
+        "analyzable_s": 87.92125458792125
+      }
+    ]
+  },
+  "Joe Biden": {
+    "avg_bpm": 11.1,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "VP Joe Biden: We own the finish line",
+        "blinks": 28,
+        "bpm": 16.252821670428915,
+        "classification": "Normal",
+        "analyzable_s": 103.36666666666653
+      },
+      {
+        "title": "FULL SPEECH: President Joe Biden's farewell address to the n",
+        "blinks": 18,
+        "bpm": 6.001780085295753,
+        "classification": "Very Low",
+        "analyzable_s": 179.94661327994663
+      }
+    ]
+  },
+  "Vladimir Putin": {
+    "avg_bpm": 29.3,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Exclusive: Tucker Carlson Interviews Vladimir Putin",
+        "blinks": 107,
+        "bpm": 37.71954518721818,
+        "classification": "High",
+        "analyzable_s": 170.2035368702036
+      },
+      {
+        "title": "Exclusive: Full Interview With Russian President Vladimir Pu",
+        "blinks": 56,
+        "bpm": 20.952808988764055,
+        "classification": "High",
+        "analyzable_s": 160.3603603603603
+      }
+    ]
+  },
+  "Angela Merkel": {
+    "avg_bpm": 19.5,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Angela Merkel",
+        "blinks": 44,
+        "bpm": 15.163050977385952,
+        "classification": "Normal",
+        "analyzable_s": 174.1074407741077
+      },
+      {
+        "title": "George W. Bush reflects on Angela Merkel's legacy (Exclusive",
+        "blinks": 54,
+        "bpm": 23.90791027154661,
+        "classification": "High",
+        "analyzable_s": 135.52000000000015
+      }
+    ]
+  },
+  "Boris Johnson": {
+    "avg_bpm": 19.9,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "FULL INTERVIEW: Boris Johnson uncut and unleashed | 60 Minut",
+        "blinks": 28,
+        "bpm": 15.79347553324968,
+        "classification": "Normal",
+        "analyzable_s": 106.37303970637308
+      },
+      {
+        "title": "Exclusive: Boris Johnson interrogated over immigration recor",
+        "blinks": 70,
+        "bpm": 24.060494958753484,
+        "classification": "High",
+        "analyzable_s": 174.55999999999966
+      }
+    ]
+  },
+  "Jacinda Ardern": {
+    "avg_bpm": 14.1,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Jacinda Ardern's Kiwi Accent Is Easily Understood In Boston",
+        "blinks": 26,
+        "bpm": 16.9395652173913,
+        "classification": "Normal",
+        "analyzable_s": 92.09209209209212
+      },
+      {
+        "title": "Jacinda Ardern Wanted To Be A Hobbit | The Graham Norton Sho",
+        "blinks": 11,
+        "bpm": 11.216859279401769,
+        "classification": "Low",
+        "analyzable_s": 58.839999999999996
+      }
+    ]
+  },
+  "Emmanuel Macron": {
+    "avg_bpm": 8.8,
+    "classification": "Very Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "FULL INTERVIEW: French President Emmanuel Macron on Brexit a",
+        "blinks": 21,
+        "bpm": 16.83591662212729,
+        "classification": "Normal",
+        "analyzable_s": 74.83999999999963
+      },
+      {
+        "title": "Emmanuel Macron interview (English): Getting \u201ctough\u201d on Brex",
+        "blinks": 1,
+        "bpm": 0.8008542445274961,
+        "classification": "Very Low",
+        "analyzable_s": 74.91999999999999
+      }
+    ]
+  },
+  "Justin Trudeau": {
+    "avg_bpm": 11.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Qui gagnera : Justin Trudeau ou Da\u2019 Bomb? | Hot Ones Qu\u00e9bec",
+        "blinks": 27,
+        "bpm": 16.23246492985972,
+        "classification": "Normal",
+        "analyzable_s": 99.80000000000001
+      },
+      {
+        "title": "Justin Trudeau Interview with Peter Mansbridge",
+        "blinks": 11,
+        "bpm": 5.831426886792439,
+        "classification": "Very Low",
+        "analyzable_s": 113.17984651318011
+      }
+    ]
+  },
+  "Narendra Modi": {
+    "avg_bpm": 17.1,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "PM Modi Interview | \"I Hold Such A Position...\": PM On Handl",
+        "blinks": 6,
+        "bpm": 6.2413314840499305,
+        "classification": "Very Low",
+        "analyzable_s": 57.68
+      },
+      {
+        "title": "Frankly Speaking with Narendra Modi - Full Interview",
+        "blinks": 91,
+        "bpm": 27.86282914880635,
+        "classification": "High",
+        "analyzable_s": 195.95999999999665
+      }
+    ]
+  },
+  "Volodymyr Zelenskyy": {
+    "avg_bpm": 12.3,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "President of Ukraine: Volodymyr Zelenskyy",
+        "blinks": 36,
+        "bpm": 15.397775876817796,
+        "classification": "Normal",
+        "analyzable_s": 140.27999999999997
+      },
+      {
+        "title": "Exclusive: Zelenskyy describes Russian intelligence sharing ",
+        "blinks": 14,
+        "bpm": 9.224926777143704,
+        "classification": "Very Low",
+        "analyzable_s": 91.05763333333334
+      }
+    ]
+  }
+}

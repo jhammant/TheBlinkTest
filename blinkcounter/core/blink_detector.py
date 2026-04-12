@@ -182,8 +182,11 @@ class BlinkStateMachine:
         self._close_velocity: float = 0.0  # How fast EAR dropped when entering CLOSING
         # Soft quality gating
         self._low_quality_frames: int = 0
+        # CNN confirmation tracking
+        self._last_cnn_prob: Optional[float] = None
+        self._cnn_saw_closed: bool = False  # True if CNN confirmed closed during this blink
 
-    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None, quality: float = 1.0) -> Optional[BlinkEvent]:
+    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None, quality: float = 1.0, cnn_closed_prob: Optional[float] = None) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
 
         Args:
@@ -193,10 +196,13 @@ class BlinkStateMachine:
             nose_tip: Optional 2D position of landmark 30 (nose tip).
             quality: Detection quality score (0.0-1.0). Frames below
                 QUALITY_THRESHOLD are skipped.
+            cnn_closed_prob: Optional CNN probability that eyes are closed (0.0-1.0).
+                When provided, used to confirm or reject blink detections.
 
         Returns:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
+        self._last_cnn_prob = cnn_closed_prob
         # Calculate EAR velocity
         dt = max(timestamp - self._prev_timestamp, 0.001)
         velocity = (ear - self._prev_ear) / dt
@@ -244,6 +250,13 @@ class BlinkStateMachine:
 
         result = None
 
+        # Track CNN confirmation during blink states
+        # Use a low threshold (0.3) — we only want CNN to reject obvious non-blinks,
+        # not borderline cases. The CNN should be a safety net, not the primary detector.
+        if cnn_closed_prob is not None and cnn_closed_prob > 0.3:
+            if self.state in (EyeState.CLOSING, EyeState.CLOSED):
+                self._cnn_saw_closed = True
+
         if self.state == EyeState.OPEN:
             if below_threshold:
                 self._consecutive_below = 1
@@ -251,7 +264,11 @@ class BlinkStateMachine:
                 self._min_ear_during_blink = ear
                 self._pre_blink_ear = self._baseline_ear
                 self._pre_blink_nose_tip = nose_tip.copy() if nose_tip is not None else None
-                self._close_velocity = velocity  # Save velocity when entering CLOSING
+                self._close_velocity = velocity
+                self._cnn_saw_closed = False  # Reset CNN tracking for new blink
+                # Check CNN on this first closing frame too
+                if cnn_closed_prob is not None and cnn_closed_prob > 0.3:
+                    self._cnn_saw_closed = True
                 self.state = EyeState.CLOSING
 
         elif self.state == EyeState.CLOSING:
@@ -307,6 +324,14 @@ class BlinkStateMachine:
             if nose_dist > 15.0:  # Generous: only reject large head movements
                 self._reset_to_open()
                 return None
+
+        # CNN confirmation gate: if CNN was available during this blink but never
+        # confirmed the eyes looked closed, reject the blink as a false positive.
+        # This is the key filter for head-movement false positives (Trump/teleprompter).
+        if self._last_cnn_prob is not None and not self._cnn_saw_closed:
+            # CNN was running but never saw closed eyes during this EAR dip
+            self._reset_to_open()
+            return None
 
         event = BlinkEvent(
             timestamp=self._blink_start_time,

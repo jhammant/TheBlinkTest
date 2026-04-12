@@ -25,6 +25,39 @@ from blinkcounter.core.models import AnalysisResult, BlinkEvent, Person
 logger = logging.getLogger(__name__)
 
 
+def _extract_eye_crop(frame: np.ndarray, left_eye: np.ndarray, right_eye: np.ndarray) -> np.ndarray | None:
+    """Extract a padded eye crop from the frame using landmark points.
+
+    Combines both eyes into one crop for CNN classification.
+    """
+    # Get bounding box around both eyes
+    all_points = np.vstack([left_eye, right_eye])
+    x_min = int(all_points[:, 0].min())
+    y_min = int(all_points[:, 1].min())
+    x_max = int(all_points[:, 0].max())
+    y_max = int(all_points[:, 1].max())
+
+    # Pad by 50%
+    w = x_max - x_min
+    h = y_max - y_min
+    pad_x = int(w * 0.5)
+    pad_y = int(h * 0.8)  # More vertical padding for eyelids
+
+    x_min = max(0, x_min - pad_x)
+    y_min = max(0, y_min - pad_y)
+    x_max = min(frame.shape[1], x_max + pad_x)
+    y_max = min(frame.shape[0], y_max + pad_y)
+
+    if x_max <= x_min or y_max <= y_min:
+        return None
+
+    crop = frame[y_min:y_max, x_min:x_max]
+    if crop.size == 0:
+        return None
+
+    return crop
+
+
 def _analyze_chunk(
     video_path: str,
     start_frame: int,
@@ -127,15 +160,17 @@ def _analyze_chunk(
 class VideoAnalyzer:
     """Analyzes a video file for blink detection across tracked faces."""
 
-    def __init__(self, max_workers: int = 0) -> None:
+    def __init__(self, max_workers: int = 0, use_cnn: bool = False) -> None:
         """Initialize with optional worker count.
 
         Args:
             max_workers: Number of parallel workers. 0 = auto (CPU count).
+            use_cnn: Whether to use CNN eye classifier for blink confirmation.
         """
         if max_workers <= 0:
             max_workers = max(1, mp_proc.cpu_count() or 4)
         self._max_workers = max_workers
+        self._use_cnn = use_cnn
 
     def analyze(
         self,
@@ -194,9 +229,20 @@ class VideoAnalyzer:
         import threading
 
         from blinkcounter.core.face_tracker import FaceTracker
+        from blinkcounter.core.eye_classifier import EyeStateClassifier
 
         tracker = FaceTracker(detect_interval=10)
         blink_machines: dict[str, BlinkStateMachine] = {}
+
+        # CNN eye classifier — disabled by default until training data improves.
+        # The CNN was trained on EAR-labeled data so it shares EAR's biases.
+        # Enable with VideoAnalyzer(use_cnn=True) once better training data exists.
+        cnn = EyeStateClassifier() if self._use_cnn else None
+        use_cnn = cnn is not None and cnn.is_available
+        if use_cnn:
+            logger.info("CNN eye classifier loaded — using ensemble detection")
+        else:
+            logger.info("Using EAR-only detection")
 
         # Queue for read frames: (frame_number, frame) or None for end
         frame_queue: queue.Queue = queue.Queue(maxsize=64)
@@ -234,7 +280,7 @@ class VideoAnalyzer:
                 fn, frame = item
                 timestamp = fn / fps if fps > 0 else 0.0
                 tracked_faces = tracker.process_frame(frame, timestamp)
-                tracked_queue.put((fn, timestamp, tracked_faces))
+                tracked_queue.put((fn, timestamp, tracked_faces, frame))
 
         # Start pipeline threads
         reader_thread = threading.Thread(target=reader_worker, daemon=True)
@@ -252,7 +298,7 @@ class VideoAnalyzer:
                 item = tracked_queue.get()
                 if item is None:
                     break
-                fn, timestamp, tracked_faces = item
+                fn, timestamp, tracked_faces, frame = item
 
                 for person, eye_landmarks, all_landmarks in tracked_faces:
                     left_eye, right_eye = eye_landmarks
@@ -270,12 +316,21 @@ class VideoAnalyzer:
                         left_ear, right_ear, head_pose, all_landmarks,
                     )
 
+                    # CNN confirmation: when EAR suggests eyes might be closing,
+                    # ask the CNN if the eyes actually look closed
+                    cnn_closed_prob = None
+                    if use_cnn and avg_ear < 0.28:  # Loose pre-filter
+                        eye_crop = _extract_eye_crop(frame, left_eye, right_eye)
+                        if eye_crop is not None:
+                            cnn_closed_prob = cnn.predict(eye_crop)
+
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
                     event = blink_machines[person.id].update(
                         avg_ear, timestamp, head_pose,
                         nose_tip=all_landmarks[30], quality=quality,
+                        cnn_closed_prob=cnn_closed_prob,
                     )
                     if event is not None:
                         person.blink_events.append(event)
