@@ -171,6 +171,9 @@ class BlinkStateMachine:
         self._consecutive_below = 0
         self._blink_start_time: Optional[float] = None
         self._min_ear_during_blink: float = 1.0
+        # Moving average filter for EAR smoothing (reduces noise from landmark jitter)
+        self._ear_filter: deque[float] = deque(maxlen=2)  # Width=2 moving average
+        self._ear_filter_sum: float = 0.0
         # Track recent EAR values for baseline
         self._ear_history: deque[float] = deque(maxlen=90)  # ~3s at 30fps
         self._baseline_ear: float = 0.28  # Default until enough samples
@@ -203,6 +206,11 @@ class BlinkStateMachine:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
         self._last_cnn_prob = cnn_closed_prob
+
+        # Note: Moving average filtering was tested (width 2-3) but reduces ground
+        # truth accuracy by smoothing out real blink dips. Raw EAR + adaptive
+        # threshold works better for our use case.
+
         # Calculate EAR velocity
         dt = max(timestamp - self._prev_timestamp, 0.001)
         velocity = (ear - self._prev_ear) / dt

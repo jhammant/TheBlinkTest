@@ -208,5 +208,110 @@
         "analyzable_s": 91.05763333333334
       }
     ]
+  },
+  "Mark Zuckerberg": {
+    "avg_bpm": 15.2,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Joe Rogan Experience #2255 - Mark Zuckerberg",
+        "blinks": 38,
+        "bpm": 14.88705882352943,
+        "classification": "Low",
+        "analyzable_s": 153.15315315315297
+      },
+      {
+        "title": "The Future Mark Zuckerberg Is Trying To Build",
+        "blinks": 20,
+        "bpm": 15.443478260869565,
+        "classification": "Normal",
+        "analyzable_s": 77.7027027027027
+      }
+    ]
+  },
+  "Tim Cook": {
+    "avg_bpm": 12.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Tim Cook",
+        "blinks": 29,
+        "bpm": 11.713342318059302,
+        "classification": "Low",
+        "analyzable_s": 148.5485485485485
+      },
+      {
+        "title": "Apple CEO Tim Cook on iPhone 17 launch: It's the most import",
+        "blinks": 23,
+        "bpm": 12.323778307508944,
+        "classification": "Low",
+        "analyzable_s": 111.97864531197861
+      }
+    ]
+  },
+  "Satya Nadella": {
+    "avg_bpm": 21.6,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The Advice That Changed Satya Nadella's Life",
+        "blinks": 79,
+        "bpm": 30.393196405648276,
+        "classification": "High",
+        "analyzable_s": 155.95595595595591
+      },
+      {
+        "title": "Satya Nadella \u2013 How Microsoft thinks about AGI",
+        "blinks": 17,
+        "bpm": 12.824079706345033,
+        "classification": "Low",
+        "analyzable_s": 79.53787120453794
+      }
+    ]
+  },
+  "Sundar Pichai": {
+    "avg_bpm": 15.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The history and future of AI at Google, with Sundar Pichai",
+        "blinks": 23,
+        "bpm": 10.140018387986517,
+        "classification": "Low",
+        "analyzable_s": 136.0944277610944
+      },
+      {
+        "title": "Full interview: Google CEO Sundar Pichai on the \u2018AI boom\u2019 an",
+        "blinks": 49,
+        "bpm": 19.822006472491893,
+        "classification": "Normal",
+        "analyzable_s": 148.3200000000001
+      }
+    ]
+  },
+  "Jensen Huang": {
+    "avg_bpm": 18.4,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "NVIDIA CEO Jensen Huang's Vision for the Future",
+        "blinks": 15,
+        "bpm": 18.042140468227412,
+        "classification": "Normal",
+        "analyzable_s": 49.88321654988326
+      },
+      {
+        "title": "Jensen Huang: NVIDIA - The $4 Trillion Company & the AI Revo",
+        "blinks": 21,
+        "bpm": 18.8528207688467,
+        "classification": "Normal",
+        "analyzable_s": 66.8335001668336
+      }
+    ]
   }
 }
