@@ -34,7 +34,7 @@ _MERGE_ENCODING_THRESHOLD = 0.8  # Encoding distance for merging persons
 _SPATIAL_WEIGHT = 0.3  # Weight for spatial distance in matching
 _ENCODING_WEIGHT = 0.7  # Weight for encoding distance in matching
 _WEIGHTED_MATCH_THRESHOLD = 0.8  # Combined score threshold for matching
-_ENCODING_RECOMPUTE_INTERVAL = 30  # Re-compute encoding every N frames of visibility
+_ENCODING_RECOMPUTE_INTERVAL = 90  # Re-compute encoding every N frames of visibility (less frequent = faster)
 _MAX_SPATIAL_DISTANCE = 300.0  # Normalisation factor for spatial distance (pixels)
 
 
@@ -59,15 +59,16 @@ class FaceTracker:
     fragmented persons that represent the same individual.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, detect_interval: int = 10) -> None:
         self._detector = dlib.get_frontal_face_detector()
         self._predictor = dlib.shape_predictor(_PREDICTOR_PATH)
         self._persons: list[Person] = []
         self._tracked_faces: list[_TrackedFace] = []
         self._next_label_index: int = 0
-        # Only re-detect faces every N frames
-        self._detect_interval: int = 5
+        # Only re-detect faces every N frames (correlation tracker fills the gap)
+        self._detect_interval: int = detect_interval
         self._frame_count: int = 0
+        self._detect_scale: float = 0.5  # Downscale for face detection (faster)
 
     def process_frame(
         self, frame: np.ndarray, timestamp: float
@@ -128,7 +129,21 @@ class FaceTracker:
         timestamp: float,
     ) -> list[tuple[Person, np.ndarray, np.ndarray]]:
         """Run face detection, match to existing tracked faces, create new ones."""
-        detected_rects = self._detector(gray, 0)
+        # Downscale for faster face detection
+        s = self._detect_scale
+        if s < 1.0:
+            small_gray = cv2.resize(gray, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
+            small_rects = self._detector(small_gray, 0)
+            # Scale rects back to original size
+            detected_rects = [
+                dlib.rectangle(
+                    int(r.left() / s), int(r.top() / s),
+                    int(r.right() / s), int(r.bottom() / s)
+                )
+                for r in small_rects
+            ]
+        else:
+            detected_rects = self._detector(gray, 0)
 
         if not detected_rects:
             # Mark all trackers as inactive

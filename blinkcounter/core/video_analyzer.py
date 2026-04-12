@@ -181,37 +181,83 @@ class VideoAnalyzer:
         predictor_path: str,
         progress_callback: Optional[Callable[..., None]] = None,
     ) -> AnalysisResult:
-        """Sequential analysis for short videos."""
+        """Pipeline-parallel analysis: read/detect in threads, blink logic in order.
+
+        Uses a producer-consumer pattern:
+        - Reader thread reads frames as fast as possible
+        - Face tracker processes frames sequentially (maintains correlation tracking)
+        - Blink detection runs on tracker output (fast, sequential)
+        """
+        import queue
+        import threading
+
         from blinkcounter.core.face_tracker import FaceTracker
 
-        tracker = FaceTracker()
+        tracker = FaceTracker(detect_interval=10)
         blink_machines: dict[str, BlinkStateMachine] = {}
 
-        cap = cv2.VideoCapture(video_path)
-        frame_number = 0
-        frames_processed = 0
+        # Queue for read frames: (frame_number, frame) or None for end
+        frame_queue: queue.Queue = queue.Queue(maxsize=64)
+        # Queue for tracked results: (frame_number, tracked_faces) or None for end
+        tracked_queue: queue.Queue = queue.Queue(maxsize=64)
 
+        frames_processed = 0
+        reader_done = threading.Event()
+        tracker_done = threading.Event()
+
+        def reader_worker():
+            """Read frames from video into queue."""
+            cap = cv2.VideoCapture(video_path)
+            fn = 0
+            try:
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    frame_queue.put((fn, frame))
+                    fn += 1
+            finally:
+                cap.release()
+                frame_queue.put(None)  # Sentinel
+                reader_done.set()
+
+        def tracker_worker():
+            """Process frames through face tracker (sequential, correlation tracking)."""
+            while True:
+                item = frame_queue.get()
+                if item is None:
+                    tracked_queue.put(None)  # Sentinel
+                    tracker_done.set()
+                    break
+                fn, frame = item
+                timestamp = fn / fps if fps > 0 else 0.0
+                tracked_faces = tracker.process_frame(frame, timestamp)
+                tracked_queue.put((fn, timestamp, tracked_faces))
+
+        # Start pipeline threads
+        reader_thread = threading.Thread(target=reader_worker, daemon=True)
+        tracker_thread = threading.Thread(target=tracker_worker, daemon=True)
+        reader_thread.start()
+        tracker_thread.start()
+
+        # Main thread: consume tracked faces and run blink detection
+        frame_number = 0
         try:
             while True:
-                ret, frame = cap.read()
-                if not ret:
+                item = tracked_queue.get()
+                if item is None:
                     break
-
-                timestamp = frame_number / fps if fps > 0 else 0.0
-                tracked_faces = tracker.process_frame(frame, timestamp)
+                fn, timestamp, tracked_faces = item
 
                 for person, eye_landmarks, all_landmarks in tracked_faces:
                     left_eye, right_eye = eye_landmarks
                     left_ear = calculate_ear(left_eye)
                     right_ear = calculate_ear(right_eye)
 
-                    # Skip if EAR is wildly asymmetric (face at angle)
                     if not check_ear_symmetry(left_ear, right_ear):
                         continue
 
                     avg_ear = (left_ear + right_ear) / 2.0
-
-                    # Estimate head pose for filtering
                     head_pose = estimate_head_pose(all_landmarks)
 
                     if person.id not in blink_machines:
@@ -222,15 +268,16 @@ class VideoAnalyzer:
                         person.blink_events.append(event)
 
                 frames_processed += 1
-                frame_number += 1
+                frame_number = fn + 1
 
-                if progress_callback and total_frames > 0 and frame_number % 100 == 0:
+                if progress_callback and total_frames > 0 and frames_processed % 200 == 0:
                     progress_callback(
-                        min(frame_number / total_frames, 1.0),
-                        f"Analyzing frame {frame_number}/{total_frames}",
+                        min(frames_processed / total_frames, 1.0),
+                        f"Analyzing frame {frames_processed}/{total_frames}",
                     )
         finally:
-            cap.release()
+            reader_thread.join(timeout=5)
+            tracker_thread.join(timeout=5)
 
         persons = tracker.get_persons()
         if progress_callback:
