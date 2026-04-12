@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from typing import Optional
 
 import numpy as np
@@ -41,10 +42,80 @@ def calculate_ear(eye_landmarks: np.ndarray) -> float:
     return (vertical_a + vertical_b) / (2.0 * horizontal)
 
 
+def estimate_head_pose(shape_points: np.ndarray) -> dict:
+    """Estimate head pose from dlib 68-landmark points.
+
+    Uses nose bridge and chin to estimate vertical tilt (pitch).
+    Uses eye corners to estimate horizontal rotation (yaw).
+
+    Args:
+        shape_points: Array of shape (68, 2) with all landmark points.
+
+    Returns:
+        Dict with 'pitch_ratio' and 'yaw_ratio' (both ~1.0 when frontal).
+    """
+    # Nose bridge: point 27 (between eyes) to point 30 (nose tip)
+    nose_top = shape_points[27]
+    nose_tip = shape_points[30]
+    chin = shape_points[8]  # Bottom of chin
+
+    # Pitch: ratio of nose-to-chin distance vs expected
+    # When looking down, nose tip moves down relative to chin
+    nose_to_chin = np.linalg.norm(nose_tip - chin)
+    nose_top_to_chin = np.linalg.norm(nose_top - chin)
+
+    if nose_top_to_chin < 1e-6:
+        pitch_ratio = 1.0
+    else:
+        # When frontal, nose_to_chin / nose_top_to_chin ~ 0.6-0.7
+        # When looking down, this ratio decreases
+        pitch_ratio = nose_to_chin / nose_top_to_chin
+
+    # Yaw: compare left eye to right eye horizontal distances from nose
+    left_eye_corner = shape_points[36]  # Left eye outer corner
+    right_eye_corner = shape_points[45]  # Right eye outer corner
+    nose_center = shape_points[30]
+
+    left_dist = np.linalg.norm(left_eye_corner - nose_center)
+    right_dist = np.linalg.norm(right_eye_corner - nose_center)
+
+    if max(left_dist, right_dist) < 1e-6:
+        yaw_ratio = 1.0
+    else:
+        # When frontal, left_dist / right_dist ~ 1.0
+        yaw_ratio = min(left_dist, right_dist) / max(left_dist, right_dist)
+
+    return {"pitch_ratio": pitch_ratio, "yaw_ratio": yaw_ratio}
+
+
+def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.45, yaw_threshold: float = 0.6) -> bool:
+    """Check if face is frontal enough for reliable EAR measurement.
+
+    Args:
+        head_pose: Dict from estimate_head_pose().
+        pitch_threshold: Minimum pitch_ratio (looking down reduces this).
+        yaw_threshold: Minimum yaw_ratio (turning sideways reduces this).
+    """
+    return head_pose["pitch_ratio"] >= pitch_threshold and head_pose["yaw_ratio"] >= yaw_threshold
+
+
+def check_ear_symmetry(left_ear: float, right_ear: float, max_ratio: float = 3.0) -> bool:
+    """Check if left and right EAR are reasonably symmetric.
+
+    Large asymmetry suggests the face is at an angle or landmarks are unreliable.
+    """
+    if min(left_ear, right_ear) < 0.01:
+        return False
+    ratio = max(left_ear, right_ear) / max(min(left_ear, right_ear), 0.01)
+    return ratio <= max_ratio
+
+
 class BlinkStateMachine:
     """Per-person state machine for tracking blink events.
 
     Transitions: OPEN -> CLOSING -> CLOSED -> OPENING -> OPEN
+
+    Includes adaptive baseline tracking and head-pose-aware filtering.
     """
 
     def __init__(self, person_id: str) -> None:
@@ -53,17 +124,35 @@ class BlinkStateMachine:
         self._consecutive_below = 0
         self._blink_start_time: Optional[float] = None
         self._min_ear_during_blink: float = 1.0
+        # Track recent EAR values for baseline
+        self._ear_history: deque[float] = deque(maxlen=90)  # ~3s at 30fps
+        self._baseline_ear: float = 0.28  # Default until enough samples
+        self._pre_blink_ear: float = 0.28  # EAR just before blink started
 
-    def update(self, ear: float, timestamp: float) -> Optional[BlinkEvent]:
+    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
 
         Args:
             ear: Current Eye Aspect Ratio value.
             timestamp: Current timestamp in seconds from video start.
+            head_pose: Optional head pose dict from estimate_head_pose().
 
         Returns:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
+        # Skip if face is not frontal (head turned or looking down)
+        if head_pose is not None and not is_face_frontal(head_pose):
+            # Reset state if we lose frontal view during a potential blink
+            if self.state != EyeState.OPEN:
+                self._reset_to_open()
+            return None
+
+        # Update baseline with open-eye EAR values
+        if self.state == EyeState.OPEN and ear > EAR_BLINK_THRESHOLD:
+            self._ear_history.append(ear)
+            if len(self._ear_history) >= 10:
+                self._baseline_ear = float(np.median(list(self._ear_history)))
+
         below_threshold = ear < EAR_BLINK_THRESHOLD
         above_open = ear >= (EAR_BLINK_THRESHOLD + EAR_HYSTERESIS)
 
@@ -72,6 +161,7 @@ class BlinkStateMachine:
                 self._consecutive_below = 1
                 self._blink_start_time = timestamp
                 self._min_ear_during_blink = ear
+                self._pre_blink_ear = self._baseline_ear
                 self.state = EyeState.CLOSING
             return None
 
@@ -82,7 +172,6 @@ class BlinkStateMachine:
                 if self._consecutive_below >= CONSECUTIVE_FRAMES_FOR_BLINK:
                     self.state = EyeState.CLOSED
             else:
-                # Went back above threshold before enough consecutive frames
                 self._reset_to_open()
             return None
 
@@ -92,7 +181,6 @@ class BlinkStateMachine:
                 self._min_ear_during_blink = min(self._min_ear_during_blink, ear)
                 return None
             else:
-                # EAR rising — transition to opening
                 self.state = EyeState.OPENING
                 return self._try_complete_blink(timestamp)
 
@@ -100,7 +188,6 @@ class BlinkStateMachine:
             if above_open:
                 self.state = EyeState.OPEN
             elif below_threshold:
-                # Dropped back down — stay in closed state
                 self.state = EyeState.CLOSED
                 self._consecutive_below += 1
                 self._min_ear_during_blink = min(self._min_ear_during_blink, ear)
@@ -109,7 +196,7 @@ class BlinkStateMachine:
         return None
 
     def _try_complete_blink(self, timestamp: float) -> Optional[BlinkEvent]:
-        """Validate blink duration and emit event if valid."""
+        """Validate blink duration and EAR drop depth, emit event if valid."""
         if self._blink_start_time is None:
             self._reset_to_open()
             return None
@@ -117,13 +204,20 @@ class BlinkStateMachine:
         duration_ms = (timestamp - self._blink_start_time) * 1000.0
 
         if duration_ms < MIN_BLINK_DURATION_MS or duration_ms > MAX_BLINK_DURATION_MS:
-            # Invalid duration — reject
             if duration_ms > MAX_BLINK_DURATION_MS:
-                # Long closure: stay in opening, wait for full open
-                pass
+                pass  # Long closure: stay in opening, wait for full open
             else:
                 self._reset_to_open()
             return None
+
+        # Validate that the EAR dropped significantly from baseline
+        # A real blink drops EAR by at least 30% from the person's baseline
+        if self._pre_blink_ear > 0.1:
+            drop_ratio = self._min_ear_during_blink / self._pre_blink_ear
+            if drop_ratio > 0.82:
+                # EAR didn't drop enough — likely head movement, not a blink
+                self._reset_to_open()
+                return None
 
         event = BlinkEvent(
             timestamp=self._blink_start_time,

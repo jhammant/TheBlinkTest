@@ -45,7 +45,7 @@ class FaceTracker:
 
     def process_frame(
         self, frame: np.ndarray, timestamp: float
-    ) -> list[tuple[Person, np.ndarray]]:
+    ) -> list[tuple[Person, np.ndarray, np.ndarray]]:
         """Process a single BGR frame and return detected persons with eye landmarks.
 
         Args:
@@ -53,8 +53,9 @@ class FaceTracker:
             timestamp: Current timestamp in seconds from video start.
 
         Returns:
-            List of (Person, eye_landmarks) tuples where eye_landmarks has
-            shape (2, 6, 2) — [left_eye, right_eye] each with 6 pixel-coord points.
+            List of (Person, eye_landmarks, all_landmarks) tuples where:
+            - eye_landmarks has shape (2, 6, 2) — [left_eye, right_eye] pixel coords
+            - all_landmarks has shape (68, 2) — all dlib landmark points (for head pose)
         """
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -67,22 +68,21 @@ class FaceTracker:
         if not self._last_face_rects:
             return []
 
-        output: list[tuple[Person, np.ndarray]] = []
+        output: list[tuple[Person, np.ndarray, np.ndarray]] = []
 
         for rect in self._last_face_rects:
             # Get 68 landmarks
             shape = self._predictor(gray, rect)
 
-            # Extract eye landmarks as pixel coordinates
-            left_eye = np.array(
-                [[shape.part(i).x, shape.part(i).y] for i in _LEFT_EYE_INDICES],
-                dtype=np.float64,
-            )
-            right_eye = np.array(
-                [[shape.part(i).x, shape.part(i).y] for i in _RIGHT_EYE_INDICES],
+            # Extract ALL 68 landmarks for head pose estimation
+            all_landmarks = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in range(68)],
                 dtype=np.float64,
             )
 
+            # Extract eye landmarks as pixel coordinates
+            left_eye = all_landmarks[36:42]
+            right_eye = all_landmarks[42:48]
             eye_landmarks = np.array([left_eye, right_eye])
 
             # Extract face region for identification
@@ -96,7 +96,7 @@ class FaceTracker:
                 rgb_frame, face_crop, x_min, y_min, x_max, y_max, timestamp
             )
 
-            output.append((person, eye_landmarks))
+            output.append((person, eye_landmarks, all_landmarks))
 
         return output
 

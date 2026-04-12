@@ -12,7 +12,12 @@ import cv2
 import numpy as np
 
 from blinkcounter.constants import VIDEO_FRAME_SKIP
-from blinkcounter.core.blink_detector import BlinkStateMachine, calculate_ear
+from blinkcounter.core.blink_detector import (
+    BlinkStateMachine,
+    calculate_ear,
+    check_ear_symmetry,
+    estimate_head_pose,
+)
 from blinkcounter.core.models import AnalysisResult, BlinkEvent, Person
 
 logger = logging.getLogger(__name__)
@@ -61,19 +66,26 @@ def _analyze_chunk(
         for face in last_faces:
             shape = predictor(gray, face)
 
-            # Extract eye landmarks
-            left_eye = np.array(
-                [[shape.part(i).x, shape.part(i).y] for i in range(36, 42)],
-                dtype=np.float64,
-            )
-            right_eye = np.array(
-                [[shape.part(i).x, shape.part(i).y] for i in range(42, 48)],
+            # Extract ALL 68 landmarks
+            all_pts = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in range(68)],
                 dtype=np.float64,
             )
 
+            left_eye = all_pts[36:42]
+            right_eye = all_pts[42:48]
+
             left_ear = calculate_ear(left_eye)
             right_ear = calculate_ear(right_eye)
+
+            # Skip if EAR is wildly asymmetric
+            if not check_ear_symmetry(left_ear, right_ear):
+                continue
+
             avg_ear = (left_ear + right_ear) / 2.0
+
+            # Head pose for filtering
+            head_pose = estimate_head_pose(all_pts)
 
             # Face encoding for person matching
             x_min = max(0, face.left())
@@ -98,6 +110,7 @@ def _analyze_chunk(
                 "encoding": encoding,
                 "thumbnail": thumbnail.tolist(),
                 "face_center": ((x_min + x_max) // 2, (y_min + y_max) // 2),
+                "head_pose": head_pose,
             })
 
         if frame_data:
@@ -189,14 +202,24 @@ class VideoAnalyzer:
                 timestamp = frame_number / fps if fps > 0 else 0.0
                 tracked_faces = tracker.process_frame(frame, timestamp)
 
-                for person, eye_landmarks in tracked_faces:
+                for person, eye_landmarks, all_landmarks in tracked_faces:
                     left_eye, right_eye = eye_landmarks
-                    avg_ear = (calculate_ear(left_eye) + calculate_ear(right_eye)) / 2.0
+                    left_ear = calculate_ear(left_eye)
+                    right_ear = calculate_ear(right_eye)
+
+                    # Skip if EAR is wildly asymmetric (face at angle)
+                    if not check_ear_symmetry(left_ear, right_ear):
+                        continue
+
+                    avg_ear = (left_ear + right_ear) / 2.0
+
+                    # Estimate head pose for filtering
+                    head_pose = estimate_head_pose(all_landmarks)
 
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
-                    event = blink_machines[person.id].update(avg_ear, timestamp)
+                    event = blink_machines[person.id].update(avg_ear, timestamp, head_pose)
                     if event is not None:
                         person.blink_events.append(event)
 
@@ -346,11 +369,12 @@ class VideoAnalyzer:
                     matched_person.last_seen_at = timestamp
                     matched_person.face_thumbnail = thumbnail
 
-                # Blink detection
+                # Blink detection with head pose filtering
                 if matched_person.id not in blink_machines:
                     blink_machines[matched_person.id] = BlinkStateMachine(matched_person.id)
 
-                event = blink_machines[matched_person.id].update(ear, timestamp)
+                head_pose = face_data.get("head_pose")
+                event = blink_machines[matched_person.id].update(ear, timestamp, head_pose)
                 if event is not None:
                     matched_person.blink_events.append(event)
 
