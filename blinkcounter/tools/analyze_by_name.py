@@ -1,9 +1,9 @@
 """Search YouTube for a person and analyze their blink rate across multiple videos.
 
 Usage:
-    python -m blinkcounter.tools.analyze_by_name "Jeff Bezos"
-    python -m blinkcounter.tools.analyze_by_name "Elon Musk" --videos 3
-    python -m blinkcounter.tools.analyze_by_name "Wednesday Addams" --max-duration 120
+    python -m blinkcounter.tools.analyze_by_name "Oprah Winfrey"
+    python -m blinkcounter.tools.analyze_by_name "David Attenborough" --videos 3
+    python -m blinkcounter.tools.analyze_by_name "Taylor Swift" --max-duration 120
 """
 
 from __future__ import annotations

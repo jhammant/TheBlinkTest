@@ -20,18 +20,15 @@ from blinkcounter.core.video_analyzer import VideoAnalyzer
 TEST_DIR = "/tmp/blinkcounter_test"
 MAX_DURATION_SECONDS = 180  # trim videos longer than 3 minutes
 
+# Test video paths — these are local files, not included in the repo.
+# Download your own test videos and place them here, or skip these tests.
 VIDEO_GROUND_TRUTH = os.path.join(TEST_DIR, "Eye Blink Rate Counter.mp4")
-VIDEO_WEDNESDAY = os.path.join(
-    TEST_DIR, "1 Minute NO BLINKING Challenge with Wednesday Addams!.mp4"
+VIDEO_ZERO_BLINKS = os.path.join(
+    TEST_DIR, "zero_blinks_challenge.mp4"
 )
-VIDEO_TRUMP = os.path.join(TEST_DIR, "trump_120s.mp4")
-VIDEO_JON = os.path.join(
-    TEST_DIR, "Jon Hammant @ AWS - DevOps and Transformation at Amazon.mp4"
-)
-VIDEO_TANUJA = os.path.join(
-    TEST_DIR,
-    "Managing Director EMEA at AWS\uff1a The Boss Who Turned Rejection Into Power.mp4",
-)
+VIDEO_HEAD_MOVEMENT = os.path.join(TEST_DIR, "head_movement_test.mp4")
+VIDEO_SINGLE_PERSON = os.path.join(TEST_DIR, "single_person_presentation.mp4")
+VIDEO_INTERVIEW = os.path.join(TEST_DIR, "interview_multi_person.mp4")
 
 
 # ---------------------------------------------------------------------------
@@ -192,25 +189,25 @@ class TestBlinkAccuracy:
             f"Expected 3-30 blinks, got {blinks}"
         )
 
-    # -- Wednesday: expect 0 blinks (no false positives) --------------------
+    # -- Zero Blinks: expect 0 blinks (no false positives) --------------------
 
     @pytest.mark.skipif(
-        not os.path.exists(VIDEO_WEDNESDAY),
-        reason=f"Video not found: {VIDEO_WEDNESDAY}",
+        not os.path.exists(VIDEO_ZERO_BLINKS),
+        reason=f"Video not found: {VIDEO_ZERO_BLINKS}",
     )
-    def test_wednesday_no_false_positives(self, analyzer):
-        """Wednesday no-blinking challenge should detect 0 blinks."""
+    def test_zero_blink_no_false_positives(self, analyzer):
+        """Zero-blink challenge should detect 0 blinks."""
         result, elapsed = run_analysis(
-            analyzer, VIDEO_WEDNESDAY, "Wednesday Addams - No Blinking Challenge"
+            analyzer, VIDEO_ZERO_BLINKS, "Zero Blinks - No Blinking Challenge"
         )
         primary = get_primary_person(result)
 
         blinks = primary.blink_count if primary else 0
         rate = primary.blinks_per_minute if primary else 0.0
-        print(f"\n  >> Wednesday: {blinks} blinks, {rate:.1f} bpm")
+        print(f"\n  >> Zero Blinks: {blinks} blinks, {rate:.1f} bpm")
 
-        _cached_results["wednesday"] = {
-            "video": "Wednesday Addams",
+        _cached_results["zero_blinks"] = {
+            "video": "Zero Blinks Subject",
             "blinks": blinks,
             "bpm": rate,
             "classification": primary.classification.value if primary else "-",
@@ -222,27 +219,27 @@ class TestBlinkAccuracy:
             f"Expected 0 blinks (false positives), got {blinks}"
         )
 
-    # -- Trump: false-positive reduction target (< 40/min) ------------------
+    # -- Head Movement: false-positive reduction target (< 40/min) ------------------
 
     @pytest.mark.skipif(
-        not os.path.exists(VIDEO_TRUMP),
-        reason=f"Video not found: {VIDEO_TRUMP}",
+        not os.path.exists(VIDEO_HEAD_MOVEMENT),
+        reason=f"Video not found: {VIDEO_HEAD_MOVEMENT}",
     )
-    def test_trump_false_positive_reduction(self, analyzer):
-        """Trump 120s video blink rate should be < 40/min (was 79, targeting reduction)."""
+    def test_head_movement_false_positive_reduction(self, analyzer):
+        """Head movement video blink rate should be < 40/min (was 79, targeting reduction)."""
         result, elapsed = run_analysis(
-            analyzer, VIDEO_TRUMP, "Trump 120s - False Positive Reduction"
+            analyzer, VIDEO_HEAD_MOVEMENT, "Head Movement - False Positive Test"
         )
         primary = get_primary_person(result)
 
-        assert primary is not None, "No person detected in Trump video"
+        assert primary is not None, "No person detected in head movement video"
 
         blinks = primary.blink_count
         rate = primary.blinks_per_minute
-        print(f"\n  >> Trump: {blinks} blinks, {rate:.1f} bpm")
+        print(f"\n  >> Head Movement: {blinks} blinks, {rate:.1f} bpm")
 
-        _cached_results["trump"] = {
-            "video": "Trump 120s",
+        _cached_results["head_movement"] = {
+            "video": "Head Movement Subject",
             "blinks": blinks,
             "bpm": rate,
             "classification": primary.classification.value,
@@ -254,20 +251,20 @@ class TestBlinkAccuracy:
             f"Expected blink rate < 40/min, got {rate:.1f}/min"
         )
 
-    # -- Jon Hammant: exactly 1 person, reasonable rate ---------------------
+    # -- Single Person: exactly 1 person, reasonable rate ---------------------
 
     @pytest.mark.skipif(
-        not os.path.exists(VIDEO_JON),
-        reason=f"Video not found: {VIDEO_JON}",
+        not os.path.exists(VIDEO_SINGLE_PERSON),
+        reason=f"Video not found: {VIDEO_SINGLE_PERSON}",
     )
     def test_person_identification(self, analyzer):
-        """Jon Hammant video should detect exactly 1 person with reasonable blink rate.
+        """single person video should detect exactly 1 person with reasonable blink rate.
 
         Current detector under-counts; baseline is ~4.5 bpm over 3 min.
         We assert person identification (1 person) and a minimum detection floor.
         """
         result, elapsed = run_analysis(
-            analyzer, VIDEO_JON, "Jon Hammant @ AWS"
+            analyzer, VIDEO_SINGLE_PERSON, "Single Person - Presentation"
         )
 
         # Only count persons with meaningful visibility (>5s)
@@ -281,10 +278,10 @@ class TestBlinkAccuracy:
         primary = significant_persons[0]
         rate = primary.blinks_per_minute
         blinks = primary.blink_count
-        print(f"\n  >> Jon Hammant: {blinks} blinks, {rate:.1f} bpm")
+        print(f"\n  >> Single Person: {blinks} blinks, {rate:.1f} bpm")
 
-        _cached_results["jon"] = {
-            "video": "Jon Hammant @ AWS",
+        _cached_results["person_id"] = {
+            "video": "Single Person - Presentation",
             "blinks": blinks,
             "bpm": rate,
             "classification": primary.classification.value,
@@ -298,30 +295,30 @@ class TestBlinkAccuracy:
             f"Expected blink rate 2-30/min, got {rate:.1f}/min"
         )
 
-    # -- Tanuja: blinks detected (> 0, > 3/min) ----------------------------
+    # -- Interview: blinks detected (> 0, > 3/min) ----------------------------
 
     @pytest.mark.skipif(
-        not os.path.exists(VIDEO_TANUJA),
-        reason=f"Video not found: {VIDEO_TANUJA}",
+        not os.path.exists(VIDEO_INTERVIEW),
+        reason=f"Video not found: {VIDEO_INTERVIEW}",
     )
-    def test_tanuja_detection(self, analyzer):
-        """Tanuja video should detect > 0 blinks at > 3/min."""
+    def test_interview_detection(self, analyzer):
+        """interview video should detect > 0 blinks at > 3/min."""
         result, elapsed = run_analysis(
-            analyzer, VIDEO_TANUJA, "Tanuja - Rejection Into Power"
+            analyzer, VIDEO_INTERVIEW, "Interview - Multi-Person"
         )
         primary = get_primary_person(result)
 
-        assert primary is not None, "No person detected in Tanuja video"
+        assert primary is not None, "No person detected in interview video"
         assert primary.total_visible_duration >= 5.0, (
             f"Primary person only visible {primary.total_visible_duration:.1f}s"
         )
 
         blinks = primary.blink_count
         rate = primary.blinks_per_minute
-        print(f"\n  >> Tanuja: {blinks} blinks, {rate:.1f} bpm")
+        print(f"\n  >> Interview: {blinks} blinks, {rate:.1f} bpm")
 
-        _cached_results["tanuja"] = {
-            "video": "Tanuja - Rejection Into Power",
+        _cached_results["interview"] = {
+            "video": "Interview - Multi-Person",
             "blinks": blinks,
             "bpm": rate,
             "classification": primary.classification.value,
@@ -341,10 +338,10 @@ class TestBlinkAccuracy:
         # Run any videos not already cached (in case individual tests were skipped)
         videos = {
             "ground_truth": (VIDEO_GROUND_TRUTH, "Eye Blink Rate Counter"),
-            "wednesday": (VIDEO_WEDNESDAY, "Wednesday Addams"),
-            "trump": (VIDEO_TRUMP, "Trump 120s"),
-            "jon": (VIDEO_JON, "Jon Hammant @ AWS"),
-            "tanuja": (VIDEO_TANUJA, "Tanuja - Rejection Into Power"),
+            "zero_blinks": (VIDEO_ZERO_BLINKS, "Zero Blinks Subject"),
+            "head_movement": (VIDEO_HEAD_MOVEMENT, "Head Movement Subject"),
+            "person_id": (VIDEO_SINGLE_PERSON, "Single Person - Presentation"),
+            "interview": (VIDEO_INTERVIEW, "Interview - Multi-Person"),
         }
 
         for key, (path, label) in videos.items():
@@ -393,7 +390,7 @@ class TestBlinkAccuracy:
         print("-" * 90)
 
         total_time = 0.0
-        for key in ["ground_truth", "wednesday", "trump", "jon", "tanuja"]:
+        for key in ["ground_truth", "zero_blinks", "head_movement", "person_id", "interview"]:
             row = _cached_results.get(key, {})
             if row.get("skipped"):
                 print(f"{row.get('video', key):<35} {'SKIPPED':>7}")
