@@ -167,12 +167,10 @@ class VideoAnalyzer:
             Path(__file__).parent.parent / "models" / "shape_predictor_68_face_landmarks.dat"
         )
 
-        # For short videos or single core, process sequentially
-        if total_frames < 300 or self._max_workers == 1:
-            return self._analyze_sequential(video_path, fps, total_frames, duration_seconds, predictor_path, progress_callback)
-
-        # Split into chunks for parallel processing
-        return self._analyze_parallel(video_path, fps, total_frames, duration_seconds, predictor_path, progress_callback)
+        # Always use sequential mode for best accuracy (correlation tracking
+        # maintains person identity across frames, which parallel can't do).
+        # Sequential is ~4x slower but eliminates person fragmentation.
+        return self._analyze_sequential(video_path, fps, total_frames, duration_seconds, predictor_path, progress_callback)
 
     def _analyze_sequential(
         self,
@@ -261,30 +259,35 @@ class VideoAnalyzer:
 
         num_workers = min(self._max_workers, max(1, total_frames // 300))
         chunk_size = total_frames // num_workers
+        # Overlap chunks by 30 frames (~1s) to avoid losing blinks at boundaries
+        overlap = 30
         chunks = []
         for i in range(num_workers):
-            start = i * chunk_size
-            end = start + chunk_size if i < num_workers - 1 else total_frames
-            chunks.append((start, end))
+            start = max(0, i * chunk_size - overlap) if i > 0 else 0
+            end = start + chunk_size + overlap if i < num_workers - 1 else total_frames
+            # Track the "valid" range (non-overlapping portion) for blink event filtering
+            valid_start = i * chunk_size
+            valid_end = (i + 1) * chunk_size if i < num_workers - 1 else total_frames
+            chunks.append((start, end, valid_start, valid_end))
 
         if progress_callback:
             progress_callback(0.0, f"Analyzing with {num_workers} parallel workers...")
 
         # Process chunks in parallel
-        all_chunk_results = [None] * num_workers
+        all_chunk_results: list[tuple[list, float, float]] = [None] * num_workers  # (data, valid_start_ts, valid_end_ts)
         completed = 0
 
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = {}
-            for idx, (start, end) in enumerate(chunks):
+            for idx, (start, end, valid_start, valid_end) in enumerate(chunks):
                 future = executor.submit(
                     _analyze_chunk, video_path, start, end, fps, predictor_path
                 )
-                futures[future] = idx
+                futures[future] = (idx, valid_start / fps, valid_end / fps)
 
             for future in as_completed(futures):
-                idx = futures[future]
-                all_chunk_results[idx] = future.result()
+                idx, valid_start_ts, valid_end_ts = futures[future]
+                all_chunk_results[idx] = (future.result(), valid_start_ts, valid_end_ts)
                 completed += 1
                 if progress_callback:
                     progress_callback(
@@ -295,11 +298,18 @@ class VideoAnalyzer:
         if progress_callback:
             progress_callback(0.8, "Merging results and matching persons...")
 
-        # Merge all frame data in order
+        # Merge all frame data in order, filtering to valid (non-overlapping) ranges
         all_frame_data = []
-        for chunk_result in all_chunk_results:
-            if chunk_result:
-                all_frame_data.extend(chunk_result)
+        for chunk_entry in all_chunk_results:
+            if chunk_entry is None:
+                continue
+            chunk_data, valid_start_ts, valid_end_ts = chunk_entry
+            for frame_faces in chunk_data:
+                # Only include frames within this chunk's valid time range
+                if frame_faces:
+                    ts = frame_faces[0]["timestamp"]
+                    if valid_start_ts <= ts < valid_end_ts:
+                        all_frame_data.append(frame_faces)
 
         # Match persons across all frames and detect blinks
         persons, total_processed = self._merge_and_detect(
