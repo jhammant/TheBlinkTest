@@ -35,6 +35,8 @@ class BlinkAssessment:
     risk_level: str  # "Minimal", "Low", "Moderate", "Elevated", "High"
     interpretation: str  # Human-readable explanation
     caveats: list[str]  # Factors that may affect reliability
+    trust_score: float = 1.0  # 0.0-1.0 — how much to trust this result
+    trusted: bool = True  # False = result should not be used for conclusions
 
 
 def assess_person(person: Person) -> BlinkAssessment:
@@ -60,6 +62,10 @@ def assess_person(person: Person) -> BlinkAssessment:
     else:
         confidence = "Very Low"
 
+    # Trust score: 0.0-1.0 based on data quality
+    trust_score = _calculate_trust(person, analyzable)
+    trusted = trust_score >= 0.5  # Below 0.5 = result should not be used
+
     # Risk score: 0-100 based on deviation from normal range (15-20/min)
     # Lower blink rate = higher risk score
     if rate <= 0:
@@ -81,11 +87,13 @@ def assess_person(person: Person) -> BlinkAssessment:
     else:
         risk_score = 15  # High blink rate — could be stress, not psychopathy
 
-    # Adjust risk score by confidence
+    # Adjust risk score by confidence and trust
     if confidence == "Very Low":
         risk_score = min(risk_score, 30)  # Cap at 30 if insufficient data
     elif confidence == "Low":
         risk_score = int(risk_score * 0.8)
+    if not trusted:
+        risk_score = min(risk_score, 20)  # Cap if we don't trust the data
 
     # Risk level
     if risk_score >= 75:
@@ -105,6 +113,10 @@ def assess_person(person: Person) -> BlinkAssessment:
     # Caveats
     caveats = _build_caveats(rate, confidence, analyzable, person)
 
+    # Add trust warning to caveats if not trusted
+    if not trusted:
+        caveats.insert(0, f"LOW TRUST ({trust_score:.0%}) — insufficient or inconsistent data, result should not be relied upon")
+
     return BlinkAssessment(
         person_label=person.label,
         blinks_per_minute=rate,
@@ -115,7 +127,78 @@ def assess_person(person: Person) -> BlinkAssessment:
         risk_level=risk_level,
         interpretation=interpretation,
         caveats=caveats,
+        trust_score=trust_score,
+        trusted=trusted,
     )
+
+
+def _calculate_trust(person: Person, analyzable: float) -> float:
+    """Calculate trust score (0.0-1.0) for a person's blink rate measurement.
+
+    Trust is reduced by:
+    - Low analyzable time (< 60s = very unreliable)
+    - Low ratio of analyzable to visible time (face often at bad angle)
+    - Very high blink rate (> 30/min likely has false positives)
+    - Very high blink count with low analyzable time (suspicious)
+    """
+    trust = 1.0
+
+    # Analyzable time factor: need at least 60s for any trust
+    if analyzable < 10:
+        trust *= 0.1
+    elif analyzable < 30:
+        trust *= 0.3
+    elif analyzable < 60:
+        trust *= 0.6
+    elif analyzable < 120:
+        trust *= 0.8
+
+    # Analyzable ratio: if only 30% of visible time was analyzable, data is spotty
+    if person.total_visible_duration > 0:
+        ratio = analyzable / person.total_visible_duration
+        if ratio < 0.3:
+            trust *= 0.4
+        elif ratio < 0.5:
+            trust *= 0.7
+
+    # Suspiciously high rate likely means false positives
+    rate = person.blinks_per_minute
+    if rate > 40:
+        trust *= 0.3  # Very likely false positives
+    elif rate > 30:
+        trust *= 0.6  # Probably some false positives
+
+    return round(trust, 2)
+
+
+def calculate_cross_video_trust(per_video_rates: list[float]) -> tuple[float, str]:
+    """Calculate trust for cross-video results based on consistency.
+
+    Args:
+        per_video_rates: List of blink rates from different videos.
+
+    Returns:
+        (trust_score, explanation) tuple.
+    """
+    if len(per_video_rates) < 2:
+        return 0.4, "Only 1 video — insufficient for reliable assessment"
+
+    import statistics
+    mean_rate = statistics.mean(per_video_rates)
+    if mean_rate < 0.1:
+        return 0.3, "Near-zero rate across videos — may be detection issue"
+
+    stdev = statistics.stdev(per_video_rates) if len(per_video_rates) > 1 else 0
+    cv = stdev / mean_rate if mean_rate > 0 else 0  # Coefficient of variation
+
+    if cv > 0.5:
+        return 0.2, f"Very high variance between videos (CV={cv:.0%}) — results unreliable"
+    elif cv > 0.35:
+        return 0.4, f"High variance between videos (CV={cv:.0%}) — results questionable"
+    elif cv > 0.2:
+        return 0.7, f"Moderate variance between videos (CV={cv:.0%})"
+    else:
+        return 0.9, f"Consistent across videos (CV={cv:.0%}) — reliable"
 
 
 def _build_interpretation(
