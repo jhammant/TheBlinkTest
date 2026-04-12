@@ -8,11 +8,11 @@ EAR_BLINK_THRESHOLD = 0.22
 EAR_HYSTERESIS = 0.03  # Band above threshold to confirm eye is open again
 
 # Blink timing constraints
-MIN_BLINK_DURATION_MS = 30   # Below = noise (lowered for faster sampling)
-MAX_BLINK_DURATION_MS = 500  # Above = voluntary eye closure
+MIN_BLINK_DURATION_MS = 50   # Below = noise
+MAX_BLINK_DURATION_MS = 400  # Above = voluntary eye closure
 
 # Consecutive frames below threshold required to register a blink
-CONSECUTIVE_FRAMES_FOR_BLINK = 1  # At 15fps sampling, 1 frame = ~67ms which covers a blink
+CONSECUTIVE_FRAMES_FOR_BLINK = 2  # Requires 2+ frames below threshold (prevents head-movement false positives)
 
 # Video processing
 VIDEO_FRAME_SKIP = 3  # Process every Nth frame (at 30fps = 10 samples/sec)

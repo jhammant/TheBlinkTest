@@ -1,25 +1,126 @@
-"""Video analysis pipeline for blink detection."""
+"""Video analysis pipeline for blink detection with parallel processing."""
 
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional, Union
+import multiprocessing as mp_proc
+import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Callable, Optional
 
 import cv2
+import numpy as np
 
 from blinkcounter.constants import VIDEO_FRAME_SKIP
 from blinkcounter.core.blink_detector import BlinkStateMachine, calculate_ear
-from blinkcounter.core.face_tracker import FaceTracker
-from blinkcounter.core.models import AnalysisResult
+from blinkcounter.core.models import AnalysisResult, BlinkEvent, Person
 
 logger = logging.getLogger(__name__)
+
+
+def _analyze_chunk(
+    video_path: str,
+    start_frame: int,
+    end_frame: int,
+    fps: float,
+    predictor_path: str,
+) -> list[dict]:
+    """Analyze a chunk of video frames in a separate process.
+
+    Returns a list of per-frame results: [{face_rects, ear_values, timestamps, encodings, thumbnails}]
+    """
+    import dlib
+    import face_recognition
+
+    from blinkcounter.constants import FACE_MATCH_TOLERANCE
+
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor(predictor_path)
+
+    cap = cv2.VideoCapture(video_path)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+    results = []
+    frame_num = start_frame
+    last_faces = []
+
+    while frame_num < end_frame:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        timestamp = frame_num / fps
+
+        # Detect faces every 5 frames for speed
+        if (frame_num - start_frame) % 5 == 0:
+            last_faces = detector(gray, 0)
+
+        frame_data = []
+        for face in last_faces:
+            shape = predictor(gray, face)
+
+            # Extract eye landmarks
+            left_eye = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in range(36, 42)],
+                dtype=np.float64,
+            )
+            right_eye = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in range(42, 48)],
+                dtype=np.float64,
+            )
+
+            left_ear = calculate_ear(left_eye)
+            right_ear = calculate_ear(right_eye)
+            avg_ear = (left_ear + right_ear) / 2.0
+
+            # Face encoding for person matching
+            x_min = max(0, face.left())
+            y_min = max(0, face.top())
+            x_max = min(frame.shape[1], face.right())
+            y_max = min(frame.shape[0], face.bottom())
+
+            face_location = [(y_min, x_max, y_max, x_min)]
+            encodings = face_recognition.face_encodings(rgb, face_location)
+            encoding = encodings[0].tolist() if encodings else None
+
+            # Thumbnail
+            face_crop = frame[y_min:y_max, x_min:x_max]
+            if face_crop.size > 0:
+                thumbnail = cv2.resize(face_crop, (64, 64), interpolation=cv2.INTER_AREA)
+            else:
+                thumbnail = np.zeros((64, 64, 3), dtype=np.uint8)
+
+            frame_data.append({
+                "ear": avg_ear,
+                "timestamp": timestamp,
+                "encoding": encoding,
+                "thumbnail": thumbnail.tolist(),
+                "face_center": ((x_min + x_max) // 2, (y_min + y_max) // 2),
+            })
+
+        if frame_data:
+            results.append(frame_data)
+
+        frame_num += 1
+
+    cap.release()
+    return results
 
 
 class VideoAnalyzer:
     """Analyzes a video file for blink detection across tracked faces."""
 
-    def __init__(self) -> None:
-        self._face_tracker = FaceTracker()
+    def __init__(self, max_workers: int = 0) -> None:
+        """Initialize with optional worker count.
+
+        Args:
+            max_workers: Number of parallel workers. 0 = auto (CPU count).
+        """
+        if max_workers <= 0:
+            max_workers = max(1, mp_proc.cpu_count() or 4)
+        self._max_workers = max_workers
 
     def analyze(
         self,
@@ -28,15 +129,7 @@ class VideoAnalyzer:
     ) -> AnalysisResult:
         """Analyze a video file and return blink detection results.
 
-        Args:
-            video_path: Path to the video file.
-            progress_callback: Optional callback receiving progress as 0.0-1.0.
-
-        Returns:
-            AnalysisResult with all detected persons and their blink data.
-
-        Raises:
-            ValueError: If the video cannot be opened.
+        Uses parallel processing to maximize CPU utilization.
         """
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
@@ -45,14 +138,45 @@ class VideoAnalyzer:
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration_seconds = total_frames / fps if fps > 0 else 0.0
+        cap.release()
 
-        # Calculate frame skip to target ~15 samples/sec (need enough to catch blinks)
-        target_samples_per_sec = 15.0
-        frame_skip = max(1, int(round(fps / target_samples_per_sec)))
-        if frame_skip < 1:
-            frame_skip = VIDEO_FRAME_SKIP
+        if total_frames == 0:
+            return AnalysisResult(
+                video_source=video_path,
+                duration_seconds=0.0,
+                fps=fps,
+                frames_processed=0,
+            )
 
+        # Find predictor path
+        from pathlib import Path
+        predictor_path = str(
+            Path(__file__).parent.parent / "models" / "shape_predictor_68_face_landmarks.dat"
+        )
+
+        # For short videos or single core, process sequentially
+        if total_frames < 300 or self._max_workers == 1:
+            return self._analyze_sequential(video_path, fps, total_frames, duration_seconds, predictor_path, progress_callback)
+
+        # Split into chunks for parallel processing
+        return self._analyze_parallel(video_path, fps, total_frames, duration_seconds, predictor_path, progress_callback)
+
+    def _analyze_sequential(
+        self,
+        video_path: str,
+        fps: float,
+        total_frames: int,
+        duration_seconds: float,
+        predictor_path: str,
+        progress_callback: Optional[Callable[..., None]] = None,
+    ) -> AnalysisResult:
+        """Sequential analysis for short videos."""
+        from blinkcounter.core.face_tracker import FaceTracker
+
+        tracker = FaceTracker()
         blink_machines: dict[str, BlinkStateMachine] = {}
+
+        cap = cv2.VideoCapture(video_path)
         frame_number = 0
         frames_processed = 0
 
@@ -62,24 +186,13 @@ class VideoAnalyzer:
                 if not ret:
                     break
 
-                if frame_number % frame_skip != 0:
-                    frame_number += 1
-                    continue
-
                 timestamp = frame_number / fps if fps > 0 else 0.0
-
-                # Detect faces and get eye landmarks
-                tracked_faces = self._face_tracker.process_frame(frame, timestamp)
+                tracked_faces = tracker.process_frame(frame, timestamp)
 
                 for person, eye_landmarks in tracked_faces:
-                    # eye_landmarks shape (2, 6, 2): [left_eye, right_eye]
                     left_eye, right_eye = eye_landmarks
+                    avg_ear = (calculate_ear(left_eye) + calculate_ear(right_eye)) / 2.0
 
-                    left_ear = calculate_ear(left_eye)
-                    right_ear = calculate_ear(right_eye)
-                    avg_ear = (left_ear + right_ear) / 2.0
-
-                    # Create state machine for new persons
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
@@ -90,18 +203,17 @@ class VideoAnalyzer:
                 frames_processed += 1
                 frame_number += 1
 
-                # Report progress
-                if progress_callback and total_frames > 0:
-                    progress = min(frame_number / total_frames, 1.0)
-                    progress_callback(progress, f"Analyzing frame {frame_number}/{total_frames}")
+                if progress_callback and total_frames > 0 and frame_number % 100 == 0:
+                    progress_callback(
+                        min(frame_number / total_frames, 1.0),
+                        f"Analyzing frame {frame_number}/{total_frames}",
+                    )
         finally:
             cap.release()
 
-        # Collect persons from face tracker
-        persons = self._face_tracker.get_persons()
-
+        persons = tracker.get_persons()
         if progress_callback:
-            progress_callback(1.0)
+            progress_callback(1.0, "Analysis complete")
 
         return AnalysisResult(
             video_source=video_path,
@@ -110,3 +222,136 @@ class VideoAnalyzer:
             frames_processed=frames_processed,
             persons=persons,
         )
+
+    def _analyze_parallel(
+        self,
+        video_path: str,
+        fps: float,
+        total_frames: int,
+        duration_seconds: float,
+        predictor_path: str,
+        progress_callback: Optional[Callable[..., None]] = None,
+    ) -> AnalysisResult:
+        """Parallel analysis splitting video into chunks across CPU cores."""
+        import face_recognition
+        from blinkcounter.constants import FACE_MATCH_TOLERANCE
+
+        num_workers = min(self._max_workers, max(1, total_frames // 300))
+        chunk_size = total_frames // num_workers
+        chunks = []
+        for i in range(num_workers):
+            start = i * chunk_size
+            end = start + chunk_size if i < num_workers - 1 else total_frames
+            chunks.append((start, end))
+
+        if progress_callback:
+            progress_callback(0.0, f"Analyzing with {num_workers} parallel workers...")
+
+        # Process chunks in parallel
+        all_chunk_results = [None] * num_workers
+        completed = 0
+
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = {}
+            for idx, (start, end) in enumerate(chunks):
+                future = executor.submit(
+                    _analyze_chunk, video_path, start, end, fps, predictor_path
+                )
+                futures[future] = idx
+
+            for future in as_completed(futures):
+                idx = futures[future]
+                all_chunk_results[idx] = future.result()
+                completed += 1
+                if progress_callback:
+                    progress_callback(
+                        completed / num_workers * 0.8,
+                        f"Completed chunk {completed}/{num_workers}",
+                    )
+
+        if progress_callback:
+            progress_callback(0.8, "Merging results and matching persons...")
+
+        # Merge all frame data in order
+        all_frame_data = []
+        for chunk_result in all_chunk_results:
+            if chunk_result:
+                all_frame_data.extend(chunk_result)
+
+        # Match persons across all frames and detect blinks
+        persons, total_processed = self._merge_and_detect(
+            all_frame_data, fps, FACE_MATCH_TOLERANCE
+        )
+
+        if progress_callback:
+            progress_callback(1.0, "Analysis complete")
+
+        return AnalysisResult(
+            video_source=video_path,
+            duration_seconds=duration_seconds,
+            fps=fps,
+            frames_processed=total_processed,
+            persons=persons,
+        )
+
+    def _merge_and_detect(
+        self,
+        all_frame_data: list[list[dict]],
+        fps: float,
+        face_match_tolerance: float,
+    ) -> tuple[list[Person], int]:
+        """Merge frame data from parallel chunks, match persons, detect blinks."""
+        import face_recognition
+        from blinkcounter.constants import PERSON_LABELS, FACE_ENCODING_UPDATE_INTERVAL
+
+        persons: list[Person] = []
+        blink_machines: dict[str, BlinkStateMachine] = {}
+        next_label = 0
+        total_processed = 0
+
+        for frame_faces in all_frame_data:
+            total_processed += 1
+            for face_data in frame_faces:
+                ear = face_data["ear"]
+                timestamp = face_data["timestamp"]
+                encoding = np.array(face_data["encoding"]) if face_data["encoding"] else None
+                thumbnail = np.array(face_data["thumbnail"], dtype=np.uint8)
+
+                # Match to existing person
+                matched_person = None
+                if encoding is not None and persons:
+                    known = [(i, p) for i, p in enumerate(persons) if p.face_encoding is not None]
+                    if known:
+                        known_encs = [p.face_encoding for _, p in known]
+                        distances = face_recognition.face_distance(known_encs, encoding)
+                        best = int(np.argmin(distances))
+                        if distances[best] < face_match_tolerance:
+                            matched_person = known[best][1]
+
+                if matched_person is None:
+                    label_char = PERSON_LABELS[next_label] if next_label < len(PERSON_LABELS) else f"#{next_label+1}"
+                    matched_person = Person(
+                        id=f"person_{label_char.lower()}",
+                        label=f"Person {label_char}",
+                        face_encoding=encoding,
+                        face_thumbnail=thumbnail,
+                        first_seen_at=timestamp,
+                        last_seen_at=timestamp,
+                    )
+                    persons.append(matched_person)
+                    next_label += 1
+                else:
+                    if matched_person.last_seen_at > 0:
+                        matched_person.total_visible_duration += timestamp - matched_person.last_seen_at
+                    matched_person.last_seen_at = timestamp
+                    matched_person.face_thumbnail = thumbnail
+
+                # Blink detection
+                if matched_person.id not in blink_machines:
+                    blink_machines[matched_person.id] = BlinkStateMachine(matched_person.id)
+
+                event = blink_machines[matched_person.id].update(ear, timestamp)
+                if event is not None:
+                    matched_person.blink_events.append(event)
+
+        return persons, total_processed
