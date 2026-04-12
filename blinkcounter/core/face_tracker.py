@@ -1,38 +1,47 @@
-"""Face tracking and re-identification using MediaPipe and face_recognition."""
+"""Face tracking and re-identification using dlib and face_recognition."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional
 
 import cv2
+import dlib
 import face_recognition
-import mediapipe as mp
 import numpy as np
 
 from blinkcounter.constants import (
     FACE_ENCODING_UPDATE_INTERVAL,
     FACE_MATCH_TOLERANCE,
-    LEFT_EYE_INDICES,
     PERSON_LABELS,
-    RIGHT_EYE_INDICES,
 )
 from blinkcounter.core.models import Person
+
+# Path to the bundled dlib 68-landmark shape predictor
+_PREDICTOR_PATH = str(
+    Path(__file__).parent.parent / "models" / "shape_predictor_68_face_landmarks.dat"
+)
+
+# dlib 68-landmark eye indices
+# Left eye: points 36-41, Right eye: points 42-47
+# Each eye has 6 points: [outer, upper_outer, upper_inner, inner, lower_inner, lower_outer]
+_LEFT_EYE_INDICES = list(range(36, 42))
+_RIGHT_EYE_INDICES = list(range(42, 48))
 
 
 class FaceTracker:
     """Tracks multiple faces across video frames with re-identification."""
 
     def __init__(self) -> None:
-        self._face_mesh = mp.solutions.face_mesh.FaceMesh(
-            static_image_mode=False,
-            max_num_faces=4,
-            refine_landmarks=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
+        self._detector = dlib.get_frontal_face_detector()
+        self._predictor = dlib.shape_predictor(_PREDICTOR_PATH)
         self._persons: list[Person] = []
         self._person_frame_counts: dict[str, int] = {}
         self._next_label_index: int = 0
+        # Only re-detect faces every N frames, track in between
+        self._detect_interval: int = 5
+        self._frame_count: int = 0
+        self._last_face_rects: list[dlib.rectangle] = []
 
     def process_frame(
         self, frame: np.ndarray, timestamp: float
@@ -45,48 +54,43 @@ class FaceTracker:
 
         Returns:
             List of (Person, eye_landmarks) tuples where eye_landmarks has
-            shape (2, 6, 2) — [left_eye, right_eye] each with 6 points.
+            shape (2, 6, 2) — [left_eye, right_eye] each with 6 pixel-coord points.
         """
-        h, w = frame.shape[:2]
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        results = self._face_mesh.process(rgb_frame)
-        if not results.multi_face_landmarks:
+        # Detect faces periodically (expensive), reuse rects in between
+        self._frame_count += 1
+        if self._frame_count % self._detect_interval == 1 or not self._last_face_rects:
+            self._last_face_rects = self._detector(gray, 0)
+
+        if not self._last_face_rects:
             return []
 
         output: list[tuple[Person, np.ndarray]] = []
 
-        for face_landmarks in results.multi_face_landmarks:
-            # Extract eye landmarks in pixel coordinates
-            left_eye_px = self._extract_eye_landmarks(
-                face_landmarks, LEFT_EYE_INDICES, w, h
-            )
-            right_eye_px = self._extract_eye_landmarks(
-                face_landmarks, RIGHT_EYE_INDICES, w, h
-            )
+        for rect in self._last_face_rects:
+            # Get 68 landmarks
+            shape = self._predictor(gray, rect)
 
-            # Compute face bounding box from all landmarks
-            all_x = [lm.x * w for lm in face_landmarks.landmark]
-            all_y = [lm.y * h for lm in face_landmarks.landmark]
-            x_min = max(0, int(min(all_x)))
-            y_min = max(0, int(min(all_y)))
-            x_max = min(w, int(max(all_x)))
-            y_max = min(h, int(max(all_y)))
-
-            face_w = max(x_max - x_min, 1)
-            face_h = max(y_max - y_min, 1)
-
-            # Normalize eye landmarks to face bounding box
-            left_eye_norm = (left_eye_px - np.array([x_min, y_min])) / np.array(
-                [face_w, face_h]
+            # Extract eye landmarks as pixel coordinates
+            left_eye = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in _LEFT_EYE_INDICES],
+                dtype=np.float64,
             )
-            right_eye_norm = (right_eye_px - np.array([x_min, y_min])) / np.array(
-                [face_w, face_h]
+            right_eye = np.array(
+                [[shape.part(i).x, shape.part(i).y] for i in _RIGHT_EYE_INDICES],
+                dtype=np.float64,
             )
 
-            eye_landmarks = np.array([left_eye_norm, right_eye_norm])
+            eye_landmarks = np.array([left_eye, right_eye])
 
             # Extract face region for identification
+            x_min = max(0, rect.left())
+            y_min = max(0, rect.top())
+            x_max = min(frame.shape[1], rect.right())
+            y_max = min(frame.shape[0], rect.bottom())
+
             face_crop = frame[y_min:y_max, x_min:x_max]
             person = self._match_or_create_person(
                 rgb_frame, face_crop, x_min, y_min, x_max, y_max, timestamp
@@ -105,30 +109,8 @@ class FaceTracker:
         self._persons.clear()
         self._person_frame_counts.clear()
         self._next_label_index = 0
-
-    def _extract_eye_landmarks(
-        self,
-        face_landmarks,
-        indices: list[int],
-        frame_w: int,
-        frame_h: int,
-    ) -> np.ndarray:
-        """Extract eye landmark points in pixel coordinates.
-
-        Args:
-            face_landmarks: MediaPipe face landmarks.
-            indices: List of 6 landmark indices for one eye.
-            frame_w: Frame width in pixels.
-            frame_h: Frame height in pixels.
-
-        Returns:
-            Array of shape (6, 2) with pixel coordinates.
-        """
-        points = []
-        for idx in indices:
-            lm = face_landmarks.landmark[idx]
-            points.append([lm.x * frame_w, lm.y * frame_h])
-        return np.array(points, dtype=np.float64)
+        self._frame_count = 0
+        self._last_face_rects = []
 
     def _match_or_create_person(
         self,
@@ -140,17 +122,7 @@ class FaceTracker:
         y_max: int,
         timestamp: float,
     ) -> Person:
-        """Match a detected face to an existing person or create a new one.
-
-        Args:
-            rgb_frame: Full RGB frame for face encoding.
-            face_crop: BGR cropped face region.
-            x_min, y_min, x_max, y_max: Face bounding box in pixels.
-            timestamp: Current timestamp in seconds.
-
-        Returns:
-            Matched or newly created Person.
-        """
+        """Match a detected face to an existing person or create a new one."""
         face_location = [(y_min, x_max, y_max, x_min)]
         encodings = face_recognition.face_encodings(rgb_frame, face_location)
 

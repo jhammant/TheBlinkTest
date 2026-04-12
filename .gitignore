@@ -22,4 +22,6 @@ htmlcov/
 *.mov
 *.webm
 temp_downloads/
+blinkcounter/models/*.dat
+blinkcounter/models/*.task
 .DS_Store

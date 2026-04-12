@@ -99,22 +99,21 @@ class TestBlinkStateMachine:
         assert event.ear_value == pytest.approx(0.15, abs=0.01)
 
     def test_state_machine_rejects_noise(self):
-        """A single frame dip should not register as a blink."""
+        """A very short blink (below MIN_BLINK_DURATION_MS) should be rejected."""
         sm = self._make_sm()
-        dt = self._frame_interval()
         t = 0.0
 
         # Open
         assert sm.update(0.30, t) is None
-        t += dt
+        t += 0.001  # 1ms
 
-        # Single frame below threshold
+        # Single frame below threshold for only 1ms
         assert sm.update(0.15, t) is None
-        t += dt
+        t += 0.001  # Only 2ms total — way below MIN_BLINK_DURATION_MS
 
-        # Back to open immediately — state should reset, no blink
-        assert sm.update(0.30, t) is None
-        assert sm.state == EyeState.OPEN
+        # Back to open — blink too short, should be rejected
+        event = sm.update(0.30, t)
+        assert event is None
 
     def test_state_machine_rejects_long_closure(self):
         """Closure longer than MAX_BLINK_DURATION_MS should be rejected."""

@@ -1,26 +1,24 @@
 """Constants for blink detection and classification."""
 
-# MediaPipe Face Mesh eye landmark indices
-# Each eye has 6 key points: outer corner, upper1, upper2, inner corner, lower1, lower2
-LEFT_EYE_INDICES = [362, 385, 387, 263, 373, 380]
-RIGHT_EYE_INDICES = [33, 160, 158, 133, 153, 144]
+# dlib 68-landmark eye indices (used in face_tracker.py directly)
+# Left eye: 36-41, Right eye: 42-47
 
 # Eye Aspect Ratio (EAR) thresholds
-EAR_BLINK_THRESHOLD = 0.21
-EAR_HYSTERESIS = 0.02  # Band above threshold to confirm eye is open again
+EAR_BLINK_THRESHOLD = 0.22
+EAR_HYSTERESIS = 0.03  # Band above threshold to confirm eye is open again
 
 # Blink timing constraints
-MIN_BLINK_DURATION_MS = 50   # Below = noise
-MAX_BLINK_DURATION_MS = 400  # Above = voluntary eye closure
+MIN_BLINK_DURATION_MS = 30   # Below = noise (lowered for faster sampling)
+MAX_BLINK_DURATION_MS = 500  # Above = voluntary eye closure
 
 # Consecutive frames below threshold required to register a blink
-CONSECUTIVE_FRAMES_FOR_BLINK = 2
+CONSECUTIVE_FRAMES_FOR_BLINK = 1  # At 15fps sampling, 1 frame = ~67ms which covers a blink
 
 # Video processing
 VIDEO_FRAME_SKIP = 3  # Process every Nth frame (at 30fps = 10 samples/sec)
 
 # Face re-identification
-FACE_MATCH_TOLERANCE = 0.6  # face_recognition encoding distance threshold
+FACE_MATCH_TOLERANCE = 0.7  # face_recognition encoding distance threshold (higher = more permissive)
 FACE_ENCODING_UPDATE_INTERVAL = 30  # Re-encode faces every N processed frames
 
 # Blink rate classification (blinks per minute)

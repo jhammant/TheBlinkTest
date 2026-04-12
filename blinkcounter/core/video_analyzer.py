@@ -46,8 +46,8 @@ class VideoAnalyzer:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration_seconds = total_frames / fps if fps > 0 else 0.0
 
-        # Calculate frame skip to target ~10 samples/sec
-        target_samples_per_sec = 10.0
+        # Calculate frame skip to target ~15 samples/sec (need enough to catch blinks)
+        target_samples_per_sec = 15.0
         frame_skip = max(1, int(round(fps / target_samples_per_sec)))
         if frame_skip < 1:
             frame_skip = VIDEO_FRAME_SKIP
@@ -83,7 +83,9 @@ class VideoAnalyzer:
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
-                    blink_machines[person.id].update(avg_ear, timestamp)
+                    event = blink_machines[person.id].update(avg_ear, timestamp)
+                    if event is not None:
+                        person.blink_events.append(event)
 
                 frames_processed += 1
                 frame_number += 1
