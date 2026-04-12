@@ -131,9 +131,9 @@ class RTBeneEyeDataset(Dataset):
             )
 
         # Report class balance
-        n_closed = sum(1 for _, lbl in self.samples if lbl >= 0.5)
-        n_open = len(self.samples) - n_closed
-        print(f"Loaded {len(self.samples)} samples: {n_open} open, {n_closed} closed")
+        self.num_closed = sum(1 for _, lbl in self.samples if lbl >= 0.5)
+        self.num_open = len(self.samples) - self.num_closed
+        print(f"Loaded {len(self.samples)} samples: {self.num_open} open, {self.num_closed} closed")
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -376,10 +376,17 @@ def main() -> None:
     print(f"Using device: {device}")
 
     model = EyeStateCNN().to(device)
-    criterion = nn.BCEWithLogitsLoss()
+    # Weight positive class (closed eyes) higher since they're rare (~6% of data)
+    n_open = train_dataset.num_open
+    n_closed = train_dataset.num_closed
+    # Use sqrt of ratio to avoid overwhelming the model
+    import math
+    pos_weight = torch.tensor([math.sqrt(n_open / max(n_closed, 1))], dtype=torch.float32).to(device)
+    print(f"Class weight for closed eyes: {pos_weight.item():.1f}x")
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", factor=0.5, patience=3, verbose=True,
+        optimizer, mode="max", factor=0.5, patience=3,
     )
 
     # Training loop
