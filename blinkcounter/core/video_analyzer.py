@@ -263,7 +263,7 @@ class VideoAnalyzer:
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
-                    event = blink_machines[person.id].update(avg_ear, timestamp, head_pose)
+                    event = blink_machines[person.id].update(avg_ear, timestamp, head_pose, nose_tip=all_landmarks[30])
                     if event is not None:
                         person.blink_events.append(event)
 

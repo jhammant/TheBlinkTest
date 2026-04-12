@@ -88,7 +88,7 @@ def estimate_head_pose(shape_points: np.ndarray) -> dict:
     return {"pitch_ratio": pitch_ratio, "yaw_ratio": yaw_ratio}
 
 
-def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.45, yaw_threshold: float = 0.6) -> bool:
+def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.42, yaw_threshold: float = 0.55) -> bool:
     """Check if face is frontal enough for reliable EAR measurement.
 
     Args:
@@ -128,18 +128,23 @@ class BlinkStateMachine:
         self._ear_history: deque[float] = deque(maxlen=90)  # ~3s at 30fps
         self._baseline_ear: float = 0.28  # Default until enough samples
         self._pre_blink_ear: float = 0.28  # EAR just before blink started
+        self._pre_blink_nose_tip: Optional[np.ndarray] = None  # Nose position when blink started
 
-    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None) -> Optional[BlinkEvent]:
+    def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
 
         Args:
             ear: Current Eye Aspect Ratio value.
             timestamp: Current timestamp in seconds from video start.
             head_pose: Optional head pose dict from estimate_head_pose().
+            nose_tip: Optional 2D position of landmark 30 (nose tip).
 
         Returns:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
+        # Store latest nose tip for use in _try_complete_blink
+        self._current_nose_tip = nose_tip
+
         # Skip if face is not frontal (head turned or looking down)
         if head_pose is not None and not is_face_frontal(head_pose):
             # Reset state if we lose frontal view during a potential blink
@@ -162,6 +167,7 @@ class BlinkStateMachine:
                 self._blink_start_time = timestamp
                 self._min_ear_during_blink = ear
                 self._pre_blink_ear = self._baseline_ear
+                self._pre_blink_nose_tip = nose_tip.copy() if nose_tip is not None else None
                 self.state = EyeState.CLOSING
             return None
 
@@ -209,6 +215,16 @@ class BlinkStateMachine:
             else:
                 self._reset_to_open()
             return None
+
+        # Reject if nose moved significantly — indicates head movement, not a blink
+        if (
+            self._pre_blink_nose_tip is not None
+            and self._current_nose_tip is not None
+        ):
+            nose_dist = np.linalg.norm(self._current_nose_tip - self._pre_blink_nose_tip)
+            if nose_dist > 10.0:  # 10px allows normal micro-movement during blinks
+                self._reset_to_open()
+                return None
 
         # Validate that the EAR dropped significantly from baseline
         # A real blink drops EAR by at least 30% from the person's baseline

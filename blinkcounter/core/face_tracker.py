@@ -36,6 +36,7 @@ _ENCODING_WEIGHT = 0.7  # Weight for encoding distance in matching
 _WEIGHTED_MATCH_THRESHOLD = 0.8  # Combined score threshold for matching
 _ENCODING_RECOMPUTE_INTERVAL = 90  # Re-compute encoding every N frames of visibility (less frequent = faster)
 _MAX_SPATIAL_DISTANCE = 300.0  # Normalisation factor for spatial distance (pixels)
+_INACTIVE_GRACE_FRAMES = 30  # Keep inactive trackers for this many frames before discarding
 
 
 @dataclass
@@ -49,6 +50,7 @@ class _TrackedFace:
     frames_since_encoding: int = 0  # Frames since last encoding computation
     frames_visible: int = 0  # Total frames this face has been visible
     active: bool = True  # Whether the correlation tracker is still valid
+    frames_since_inactive: int = 0  # Frames since tracker became inactive
 
 
 class FaceTracker:
@@ -68,7 +70,6 @@ class FaceTracker:
         # Only re-detect faces every N frames (correlation tracker fills the gap)
         self._detect_interval: int = detect_interval
         self._frame_count: int = 0
-        self._detect_scale: float = 0.5  # Downscale for face detection (faster)
 
     def process_frame(
         self, frame: np.ndarray, timestamp: float
@@ -129,8 +130,14 @@ class FaceTracker:
         timestamp: float,
     ) -> list[tuple[Person, np.ndarray, np.ndarray]]:
         """Run face detection, match to existing tracked faces, create new ones."""
-        # Downscale for faster face detection
-        s = self._detect_scale
+        # Adaptive downscale based on frame width for faster face detection
+        width = gray.shape[1]
+        if width >= 960:
+            s = 0.5
+        elif width >= 640:
+            s = 0.75
+        else:
+            s = 1.0
         if s < 1.0:
             small_gray = cv2.resize(gray, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
             small_rects = self._detector(small_gray, 0)
@@ -145,10 +152,24 @@ class FaceTracker:
         else:
             detected_rects = self._detector(gray, 0)
 
+        # Adaptive fallback: if downscaled detection found nothing, retry at
+        # full scale with upsample=1 to catch smaller / distant faces.
         if not detected_rects:
-            # Mark all trackers as inactive
+            detected_rects = list(self._detector(gray, 1))
+
+        if not detected_rects:
+            # No faces found even after fallback -- tick inactive counters
             for tf in self._tracked_faces:
-                tf.active = False
+                if tf.active:
+                    tf.active = False
+                    tf.frames_since_inactive = 0
+                else:
+                    tf.frames_since_inactive += 1
+            # Discard trackers that exceeded the grace period
+            self._tracked_faces = [
+                tf for tf in self._tracked_faces
+                if tf.active or tf.frames_since_inactive <= _INACTIVE_GRACE_FRAMES
+            ]
             return []
 
         output: list[tuple[Person, np.ndarray, np.ndarray]] = []
@@ -192,6 +213,7 @@ class FaceTracker:
                 tf.last_rect = rect
                 tf.last_center = (cx, cy)
                 tf.active = True
+                tf.frames_since_inactive = 0
                 tf.frames_visible += 1
 
                 # Re-compute encoding periodically
@@ -207,31 +229,67 @@ class FaceTracker:
 
                 output.append((person, eye_landmarks, all_landmarks))
             else:
-                # No match -- create new person with encoding
-                encoding = self._compute_encoding(rgb_frame, x_min, y_min, x_max, y_max)
-                person = self._create_person(encoding, face_crop, timestamp)
-
-                # Start a new correlation tracker
-                tracker = dlib.correlation_tracker()
-                tracker.start_track(rgb_frame, rect)
-
-                tf = _TrackedFace(
-                    person=person,
-                    tracker=tracker,
-                    last_rect=rect,
-                    last_center=(cx, cy),
-                    frames_since_encoding=0,
-                    frames_visible=1,
-                    active=True,
+                # Before creating a new person, check inactive trackers
+                # within grace period for a possible reactivation match
+                reactivated_tf = self._find_inactive_match(
+                    rgb_frame, cx, cy, x_min, y_min, x_max, y_max,
+                    matched_tracked_indices,
                 )
-                self._tracked_faces.append(tf)
 
-                output.append((person, eye_landmarks, all_landmarks))
+                if reactivated_tf is not None:
+                    idx = self._tracked_faces.index(reactivated_tf)
+                    matched_tracked_indices.add(idx)
+                    person = reactivated_tf.person
 
-        # Mark unmatched trackers as inactive
+                    # Restart correlation tracker
+                    reactivated_tf.tracker = dlib.correlation_tracker()
+                    reactivated_tf.tracker.start_track(rgb_frame, rect)
+                    reactivated_tf.last_rect = rect
+                    reactivated_tf.last_center = (cx, cy)
+                    reactivated_tf.active = True
+                    reactivated_tf.frames_since_inactive = 0
+                    reactivated_tf.frames_visible += 1
+
+                    self._update_person_timing(person, timestamp)
+                    person.face_thumbnail = self._make_thumbnail(face_crop)
+
+                    output.append((person, eye_landmarks, all_landmarks))
+                else:
+                    # No match -- create new person with encoding
+                    encoding = self._compute_encoding(rgb_frame, x_min, y_min, x_max, y_max)
+                    person = self._create_person(encoding, face_crop, timestamp)
+
+                    # Start a new correlation tracker
+                    tracker = dlib.correlation_tracker()
+                    tracker.start_track(rgb_frame, rect)
+
+                    tf = _TrackedFace(
+                        person=person,
+                        tracker=tracker,
+                        last_rect=rect,
+                        last_center=(cx, cy),
+                        frames_since_encoding=0,
+                        frames_visible=1,
+                        active=True,
+                    )
+                    self._tracked_faces.append(tf)
+
+                    output.append((person, eye_landmarks, all_landmarks))
+
+        # Mark unmatched active trackers as inactive; tick inactive counters
         for i, tf in enumerate(self._tracked_faces):
-            if i not in matched_tracked_indices and tf.active:
-                tf.active = False
+            if i not in matched_tracked_indices:
+                if tf.active:
+                    tf.active = False
+                    tf.frames_since_inactive = 0
+                else:
+                    tf.frames_since_inactive += 1
+
+        # Discard trackers that exceeded the grace period
+        self._tracked_faces = [
+            tf for tf in self._tracked_faces
+            if tf.active or tf.frames_since_inactive <= _INACTIVE_GRACE_FRAMES
+        ]
 
         return output
 
@@ -258,6 +316,7 @@ class FaceTracker:
 
             if confidence < _CORRELATION_TRACKER_CONFIDENCE_THRESHOLD:
                 tf.active = False
+                tf.frames_since_inactive = 0
                 continue
 
             # Get tracked position
@@ -380,6 +439,64 @@ class FaceTracker:
                     best_idx = i
 
         return best_idx, computed_encoding
+
+    # ------------------------------------------------------------------
+    # Inactive tracker reactivation
+    # ------------------------------------------------------------------
+
+    def _find_inactive_match(
+        self,
+        rgb_frame: np.ndarray,
+        cx: float,
+        cy: float,
+        x_min: int,
+        y_min: int,
+        x_max: int,
+        y_max: int,
+        already_matched: set[int],
+    ) -> Optional[_TrackedFace]:
+        """Check inactive trackers within grace period for a nearby match.
+
+        Returns the best matching inactive _TrackedFace, or None.
+        """
+        best_tf: Optional[_TrackedFace] = None
+        best_score = float("inf")
+        encoding: Optional[np.ndarray] = None
+        computed_encoding = False
+
+        for i, tf in enumerate(self._tracked_faces):
+            if i in already_matched or tf.active:
+                continue
+            if tf.frames_since_inactive > _INACTIVE_GRACE_FRAMES:
+                continue
+
+            person = tf.person
+
+            spatial_dist = np.sqrt(
+                (cx - tf.last_center[0]) ** 2 + (cy - tf.last_center[1]) ** 2
+            )
+            spatial_normalized = min(spatial_dist / _MAX_SPATIAL_DISTANCE, 1.0)
+
+            if person.face_encoding is None:
+                score = spatial_normalized
+            else:
+                if not computed_encoding:
+                    encoding = self._compute_encoding(rgb_frame, x_min, y_min, x_max, y_max)
+                    computed_encoding = True
+
+                if encoding is not None:
+                    enc_dist = float(
+                        face_recognition.face_distance([person.face_encoding], encoding)[0]
+                    )
+                    score = enc_dist * _ENCODING_WEIGHT + spatial_normalized * _SPATIAL_WEIGHT
+                else:
+                    score = spatial_normalized
+
+            if score < best_score and score < _WEIGHTED_MATCH_THRESHOLD:
+                best_score = score
+                best_tf = tf
+
+        return best_tf
 
     # ------------------------------------------------------------------
     # Person merge: combine fragmented identities
