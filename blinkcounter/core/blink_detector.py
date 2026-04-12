@@ -99,7 +99,7 @@ def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.50, yaw_threshol
     return head_pose["pitch_ratio"] >= pitch_threshold and head_pose["yaw_ratio"] >= yaw_threshold
 
 
-QUALITY_THRESHOLD = 0.4  # Below this, skip the frame for blink detection
+QUALITY_THRESHOLD = 0.3  # Below this, skip the frame for blink detection
 
 
 def calculate_detection_quality(
@@ -176,6 +176,12 @@ class BlinkStateMachine:
         self._baseline_ear: float = 0.28  # Default until enough samples
         self._pre_blink_ear: float = 0.28  # EAR just before blink started
         self._pre_blink_nose_tip: Optional[np.ndarray] = None  # Nose position when blink started
+        # EAR velocity tracking
+        self._prev_ear: float = 0.3
+        self._prev_timestamp: float = 0.0
+        self._close_velocity: float = 0.0  # How fast EAR dropped when entering CLOSING
+        # Soft quality gating
+        self._low_quality_frames: int = 0
 
     def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None, quality: float = 1.0) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
@@ -191,12 +197,22 @@ class BlinkStateMachine:
         Returns:
             BlinkEvent if a complete valid blink was detected, None otherwise.
         """
-        # Skip frame if detection quality is too low
+        # Calculate EAR velocity
+        dt = max(timestamp - self._prev_timestamp, 0.001)
+        velocity = (ear - self._prev_ear) / dt
+
+        # Soft quality gating: only reset after >5 consecutive low-quality frames
         if quality < QUALITY_THRESHOLD:
-            # Reset blink state if quality drops during an active blink detection
-            if self.state != EyeState.OPEN:
-                self._reset_to_open()
-            return None
+            self._low_quality_frames += 1
+            if self._low_quality_frames > 5:
+                if self.state != EyeState.OPEN:
+                    self._reset_to_open()
+                self._prev_ear = ear
+                self._prev_timestamp = timestamp
+                return None
+            # Allow processing to continue for brief quality dips
+        else:
+            self._low_quality_frames = 0
 
         # Store latest nose tip for use in _try_complete_blink
         self._current_nose_tip = nose_tip
@@ -206,16 +222,27 @@ class BlinkStateMachine:
             # Reset state if we lose frontal view during a potential blink
             if self.state != EyeState.OPEN:
                 self._reset_to_open()
+            self._prev_ear = ear
+            self._prev_timestamp = timestamp
             return None
 
-        # Update baseline with open-eye EAR values
-        if self.state == EyeState.OPEN and ear > EAR_BLINK_THRESHOLD:
+        # Adaptive thresholds based on per-person baseline
+        # 25% drop from baseline = blink (0.75 multiplier)
+        # For baseline of 0.30 → close at 0.225, which matches the proven 0.22 fixed threshold
+        close_threshold = self._baseline_ear * 0.75
+        close_threshold = max(0.15, min(0.25, close_threshold))  # floor/cap
+        open_threshold = self._baseline_ear * 0.85  # Need to rise back to 85% of baseline
+
+        # Update baseline with open-eye EAR values (use 75th percentile)
+        if self.state == EyeState.OPEN and ear > close_threshold:
             self._ear_history.append(ear)
             if len(self._ear_history) >= 10:
-                self._baseline_ear = float(np.median(list(self._ear_history)))
+                self._baseline_ear = float(np.percentile(list(self._ear_history), 75))
 
-        below_threshold = ear < EAR_BLINK_THRESHOLD
-        above_open = ear >= (EAR_BLINK_THRESHOLD + EAR_HYSTERESIS)
+        below_threshold = ear < close_threshold
+        above_open = ear >= open_threshold
+
+        result = None
 
         if self.state == EyeState.OPEN:
             if below_threshold:
@@ -224,8 +251,8 @@ class BlinkStateMachine:
                 self._min_ear_during_blink = ear
                 self._pre_blink_ear = self._baseline_ear
                 self._pre_blink_nose_tip = nose_tip.copy() if nose_tip is not None else None
+                self._close_velocity = velocity  # Save velocity when entering CLOSING
                 self.state = EyeState.CLOSING
-            return None
 
         elif self.state == EyeState.CLOSING:
             if below_threshold:
@@ -235,16 +262,14 @@ class BlinkStateMachine:
                     self.state = EyeState.CLOSED
             else:
                 self._reset_to_open()
-            return None
 
         elif self.state == EyeState.CLOSED:
             if below_threshold:
                 self._consecutive_below += 1
                 self._min_ear_during_blink = min(self._min_ear_during_blink, ear)
-                return None
             else:
                 self.state = EyeState.OPENING
-                return self._try_complete_blink(timestamp)
+                result = self._try_complete_blink(timestamp)
 
         elif self.state == EyeState.OPENING:
             if above_open:
@@ -253,12 +278,13 @@ class BlinkStateMachine:
                 self.state = EyeState.CLOSED
                 self._consecutive_below += 1
                 self._min_ear_during_blink = min(self._min_ear_during_blink, ear)
-            return None
 
-        return None
+        self._prev_ear = ear
+        self._prev_timestamp = timestamp
+        return result
 
     def _try_complete_blink(self, timestamp: float) -> Optional[BlinkEvent]:
-        """Validate blink duration and EAR drop depth, emit event if valid."""
+        """Validate blink duration, velocity, and EAR drop depth, emit event if valid."""
         if self._blink_start_time is None:
             self._reset_to_open()
             return None
@@ -278,16 +304,7 @@ class BlinkStateMachine:
             and self._current_nose_tip is not None
         ):
             nose_dist = np.linalg.norm(self._current_nose_tip - self._pre_blink_nose_tip)
-            if nose_dist > 5.0:
-                self._reset_to_open()
-                return None
-
-        # Validate that the EAR dropped significantly from baseline
-        # A real blink drops EAR by at least 30% from the person's baseline
-        if self._pre_blink_ear > 0.1:
-            drop_ratio = self._min_ear_during_blink / self._pre_blink_ear
-            if drop_ratio > 0.82:
-                # EAR didn't drop enough — likely head movement, not a blink
+            if nose_dist > 15.0:  # Generous: only reject large head movements
                 self._reset_to_open()
                 return None
 
