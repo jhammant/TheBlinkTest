@@ -31,3 +31,4 @@ test_cnn_blink.py
 test_haar_blink.py
 test_accuracy.py
 .DS_Store
+common_person.png
