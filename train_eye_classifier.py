@@ -162,6 +162,72 @@ class RTBeneEyeDataset(Dataset):
         return [lbl for _, lbl in self.samples]
 
 
+class ImageFolderEyeDataset(Dataset):
+    """Loads eye crops from an ImageFolder-style directory.
+
+    Expected layout:
+        data_dir/
+        ├── open/    (label 0.0)
+        │   ├── img1.png
+        │   └── ...
+        └── closed/  (label 1.0)
+            ├── img1.png
+            └── ...
+    """
+
+    def __init__(
+        self,
+        data_dir: str,
+        transform: transforms.Compose | None = None,
+    ) -> None:
+        self.data_dir = Path(data_dir)
+        self.transform = transform
+        self.samples: list[tuple[str, float]] = []
+
+        for label_name, label_value in [("open", 0.0), ("closed", 1.0)]:
+            class_dir = self.data_dir / label_name
+            if not class_dir.exists():
+                print(f"Warning: {class_dir} not found")
+                continue
+            for img_file in sorted(class_dir.iterdir()):
+                if img_file.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    self.samples.append((str(img_file), label_value))
+
+        if not self.samples:
+            raise RuntimeError(
+                f"No samples found in {data_dir}. "
+                "Expected open/ and closed/ subdirectories with images."
+            )
+
+        self.num_closed = sum(1 for _, lbl in self.samples if lbl >= 0.5)
+        self.num_open = len(self.samples) - self.num_closed
+        print(f"Loaded {len(self.samples)} samples: {self.num_open} open, {self.num_closed} closed")
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        img_path, label = self.samples[idx]
+        img = cv2.imread(img_path)
+        if img is None:
+            raise RuntimeError(f"Failed to read image: {img_path}")
+
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (64, 64), interpolation=cv2.INTER_LINEAR)
+
+        if self.transform:
+            img = self.transform(img)
+        else:
+            img = transforms.ToTensor()(img)
+
+        label_tensor = torch.tensor(label, dtype=torch.float32)
+        return img, label_tensor
+
+    def get_labels(self) -> list[float]:
+        """Return all labels (used for building a weighted sampler)."""
+        return [lbl for _, lbl in self.samples]
+
+
 # ---------------------------------------------------------------------------
 # Training helpers
 # ---------------------------------------------------------------------------
@@ -175,7 +241,7 @@ def get_device() -> torch.device:
     return torch.device("cpu")
 
 
-def build_weighted_sampler(dataset: RTBeneEyeDataset) -> WeightedRandomSampler:
+def build_weighted_sampler(dataset: RTBeneEyeDataset | ImageFolderEyeDataset) -> WeightedRandomSampler:
     """Create a sampler that oversamples the minority class (closed eyes)."""
     labels = dataset.get_labels()
     n_closed = sum(1 for lbl in labels if lbl >= 0.5)
@@ -297,12 +363,18 @@ def discover_subjects(data_dir: str) -> list[str]:
 # Main
 # ---------------------------------------------------------------------------
 
+def _is_imagefolder_layout(data_dir: str) -> bool:
+    """Check if data_dir has open/ and closed/ subdirectories (ImageFolder layout)."""
+    data_path = Path(data_dir)
+    return (data_path / "open").is_dir() and (data_path / "closed").is_dir()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train eye-state classifier on RT-BENE")
     parser.add_argument(
         "--data-dir",
         default="/tmp/blinkcounter_training/rt_bene",
-        help="Path to extracted RT-BENE data",
+        help="Path to training data (RT-BENE format or ImageFolder with open/closed subdirs)",
     )
     parser.add_argument("--epochs", type=int, default=20, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size")
@@ -311,6 +383,12 @@ def main() -> None:
         "--output",
         default=None,
         help="Output model path (default: blinkcounter/models/eye_state_classifier.pth)",
+    )
+    parser.add_argument(
+        "--val-split",
+        type=float,
+        default=0.15,
+        help="Validation split ratio for ImageFolder datasets (default: 0.15)",
     )
     args = parser.parse_args()
 
@@ -321,20 +399,6 @@ def main() -> None:
     else:
         output_path = project_root / "blinkcounter" / "models" / "eye_state_classifier.pth"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Discover subjects
-    subjects = discover_subjects(args.data_dir)
-    if not subjects:
-        print(f"ERROR: No subjects found in {args.data_dir}")
-        print("Download RT-BENE data first. See download_rt_bene_data.sh")
-        sys.exit(1)
-    print(f"Found subjects: {subjects}")
-
-    # Split: last subject for validation, rest for training
-    val_subjects = subjects[-1:]
-    train_subjects = subjects[:-1]
-    print(f"Training on: {train_subjects}")
-    print(f"Validating on: {val_subjects}")
 
     # Data transforms
     train_transform = transforms.Compose([
@@ -349,12 +413,65 @@ def main() -> None:
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
-    # Build datasets
-    train_dataset = RTBeneEyeDataset(args.data_dir, train_subjects, transform=train_transform)
-    val_dataset = RTBeneEyeDataset(args.data_dir, val_subjects, transform=val_transform)
+    # Detect data format and build datasets
+    use_imagefolder = _is_imagefolder_layout(args.data_dir)
 
-    # Weighted sampler to handle class imbalance
-    sampler = build_weighted_sampler(train_dataset)
+    if use_imagefolder:
+        print(f"Detected ImageFolder layout in {args.data_dir}")
+        full_dataset = ImageFolderEyeDataset(args.data_dir, transform=None)
+
+        # Split into train/val
+        from torch.utils.data import random_split
+        n_val = max(1, int(len(full_dataset) * args.val_split))
+        n_train = len(full_dataset) - n_val
+        train_indices, val_indices = torch.utils.data.random_split(
+            range(len(full_dataset)), [n_train, n_val],
+            generator=torch.Generator().manual_seed(42),
+        )
+
+        # Create separate datasets with proper transforms
+        train_dataset = ImageFolderEyeDataset(args.data_dir, transform=train_transform)
+        val_dataset = ImageFolderEyeDataset(args.data_dir, transform=val_transform)
+
+        # Use Subset to apply the split
+        from torch.utils.data import Subset
+        train_dataset = Subset(train_dataset, train_indices.indices)
+        val_dataset = Subset(val_dataset, val_indices.indices)
+
+        # Compute class counts from training subset for weighting
+        all_labels = ImageFolderEyeDataset(args.data_dir).get_labels()
+        train_labels = [all_labels[i] for i in train_indices.indices]
+        num_closed = sum(1 for lbl in train_labels if lbl >= 0.5)
+        num_open = len(train_labels) - num_closed
+
+        print(f"Train: {n_train} samples ({num_open} open, {num_closed} closed)")
+        print(f"Val:   {n_val} samples")
+
+        # Build weighted sampler for training subset
+        weight_open = 1.0 / max(num_open, 1)
+        weight_closed = 1.0 / max(num_closed, 1)
+        sample_weights = [weight_closed if all_labels[i] >= 0.5 else weight_open for i in train_indices.indices]
+        sampler = WeightedRandomSampler(weights=sample_weights, num_samples=len(train_labels), replacement=True)
+
+    else:
+        # RT-BENE format
+        subjects = discover_subjects(args.data_dir)
+        if not subjects:
+            print(f"ERROR: No subjects found in {args.data_dir}")
+            print("Download RT-BENE data first. See download_rt_bene_data.sh")
+            sys.exit(1)
+        print(f"Found subjects: {subjects}")
+
+        val_subjects = subjects[-1:]
+        train_subjects = subjects[:-1]
+        print(f"Training on: {train_subjects}")
+        print(f"Validating on: {val_subjects}")
+
+        train_dataset = RTBeneEyeDataset(args.data_dir, train_subjects, transform=train_transform)
+        val_dataset = RTBeneEyeDataset(args.data_dir, val_subjects, transform=val_transform)
+        num_open = train_dataset.num_open
+        num_closed = train_dataset.num_closed
+        sampler = build_weighted_sampler(train_dataset)
 
     train_loader = DataLoader(
         train_dataset,
@@ -376,12 +493,10 @@ def main() -> None:
     print(f"Using device: {device}")
 
     model = EyeStateCNN().to(device)
-    # Weight positive class (closed eyes) higher since they're rare (~6% of data)
-    n_open = train_dataset.num_open
-    n_closed = train_dataset.num_closed
+    # Weight positive class (closed eyes) higher since they're rare
     # Use sqrt of ratio to avoid overwhelming the model
     import math
-    pos_weight = torch.tensor([math.sqrt(n_open / max(n_closed, 1))], dtype=torch.float32).to(device)
+    pos_weight = torch.tensor([math.sqrt(num_open / max(num_closed, 1))], dtype=torch.float32).to(device)
     print(f"Class weight for closed eyes: {pos_weight.item():.1f}x")
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)

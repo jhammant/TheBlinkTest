@@ -24,4 +24,10 @@ htmlcov/
 temp_downloads/
 blinkcounter/models/*.dat
 blinkcounter/models/*.task
+blinkcounter/models/*.pth
+blinkcounter/training_data/
+test_adaptive_ear.py
+test_cnn_blink.py
+test_haar_blink.py
+test_accuracy.py
 .DS_Store
