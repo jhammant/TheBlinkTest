@@ -12,7 +12,7 @@ MIN_BLINK_DURATION_MS = 50   # Below = noise
 MAX_BLINK_DURATION_MS = 400  # Above = voluntary eye closure
 
 # Consecutive frames below threshold required to register a blink
-CONSECUTIVE_FRAMES_FOR_BLINK = 2  # Requires 2+ frames below threshold (prevents head-movement false positives)
+CONSECUTIVE_FRAMES_FOR_BLINK = 2  # Requires 2+ frames below threshold
 
 # Video processing
 VIDEO_FRAME_SKIP = 3  # Process every Nth frame (at 30fps = 10 samples/sec)

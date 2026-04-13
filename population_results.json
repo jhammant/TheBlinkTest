@@ -925,5 +925,38 @@
     "classification": "High",
     "analyzable_s": 41.5,
     "visible_s": 71.2
+  },
+  {
+    "query": "teacher interview school",
+    "title": "Teacher of the Year interviews 2022",
+    "url": "https://www.youtube.com/watch?v=wP5x5M-lCxo",
+    "time_s": 55.7,
+    "bpm": 21.5,
+    "blinks": 35,
+    "classification": "High",
+    "analyzable_s": 97.6,
+    "visible_s": 116.2
+  },
+  {
+    "query": "startup founder interview",
+    "title": "How to Successfully Interview With a Startup",
+    "url": "https://www.youtube.com/watch?v=LCmiKLMk2SI",
+    "time_s": 16.4,
+    "bpm": 26.1,
+    "blinks": 52,
+    "classification": "High",
+    "analyzable_s": 119.5,
+    "visible_s": 119.6
+  },
+  {
+    "query": "startup founder interview",
+    "title": "Sam Altman explains how to come up with a great startup idea",
+    "url": "https://www.youtube.com/watch?v=DGU0wXMKqf4",
+    "time_s": 49.6,
+    "bpm": 7.3,
+    "blinks": 9,
+    "classification": "Very Low",
+    "analyzable_s": 74.1,
+    "visible_s": 109.2
   }
 ]
