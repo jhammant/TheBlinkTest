@@ -958,5 +958,100 @@
     "classification": "Very Low",
     "analyzable_s": 74.1,
     "visible_s": 109.2
+  },
+  {
+    "query": "small business owner interview",
+    "title": "We Are In Business - interview with Tracey Earl",
+    "url": "https://www.youtube.com/watch?v=yXFhmbkdyHg",
+    "time_s": 260.5,
+    "bpm": null
+  },
+  {
+    "query": "real estate agent interview",
+    "title": "How To PROVE Your Skills in a Real Estate Interview",
+    "url": "https://www.youtube.com/watch?v=hWDr9xDOFDQ",
+    "time_s": 53.6,
+    "bpm": 27.6,
+    "blinks": 41,
+    "classification": "High",
+    "analyzable_s": 89.2,
+    "visible_s": 103.8
+  },
+  {
+    "query": "real estate agent interview",
+    "title": "Luis Ortiz, Real Estate Lead Generation & First Jobs | #AskG",
+    "url": "https://www.youtube.com/watch?v=KZMyCj-AK-g",
+    "time_s": 34.8,
+    "bpm": 10.1,
+    "blinks": 11,
+    "classification": "Low",
+    "analyzable_s": 65.1,
+    "visible_s": 182.8
+  },
+  {
+    "query": "doctor interview medical",
+    "title": "Medical Job Interview Tips From a Real Doctor",
+    "url": "https://www.youtube.com/watch?v=Y_ONGcp93uw",
+    "time_s": 37.8,
+    "bpm": 39.5,
+    "blinks": 75,
+    "classification": "High",
+    "analyzable_s": 114.1,
+    "visible_s": 119.8
+  },
+  {
+    "query": "police officer interview",
+    "title": "How to Pass the Police Oral Board Interview (Without Breakin",
+    "url": "https://www.youtube.com/watch?v=05Cy0-ZE4BI",
+    "time_s": 12.6,
+    "bpm": 22.6,
+    "blinks": 45,
+    "classification": "High",
+    "analyzable_s": 119.2,
+    "visible_s": 119.5
+  },
+  {
+    "query": "chef interview restaurant",
+    "title": "Top 20 Chef Interview Questions and Answers | Chef Job Prepa",
+    "url": "https://www.youtube.com/watch?v=goLWAj6JMVU",
+    "time_s": 240.1,
+    "bpm": 3.4,
+    "blinks": 1,
+    "classification": "Very Low",
+    "analyzable_s": 17.8,
+    "visible_s": 31.8
+  },
+  {
+    "query": "artist interview studio",
+    "title": "Interview with Ludovic Nkoth, Artist - Ludovic Nkoth Studios",
+    "url": "https://www.youtube.com/watch?v=a5t0V-AEVdE",
+    "time_s": 35.2,
+    "bpm": 21.3,
+    "blinks": 15,
+    "classification": "High",
+    "analyzable_s": 42.3,
+    "visible_s": 110.4
+  },
+  {
+    "query": "artist interview studio",
+    "title": "Shrek Test Footage Interview with Barry Jackson by The Zoom ",
+    "url": "https://www.youtube.com/watch?v=QHIosSlb7RU",
+    "time_s": 20.8,
+    "bpm": 23.9,
+    "blinks": 45,
+    "classification": "High",
+    "analyzable_s": 112.9,
+    "visible_s": 121.9
+  },
+  {
+    "query": "TED talk unknown speaker",
+    "title": "Psychosis or Spiritual Awakening: Phil Borges at TEDxUMKC",
+    "url": "https://www.youtube.com/watch?v=CFtsHf1lVI4",
+    "time_s": 89.5,
+    "bpm": 13.1,
+    "blinks": 15,
+    "classification": "Low",
+    "analyzable_s": 68.9,
+    "visible_s": 105.7
   }
 ]

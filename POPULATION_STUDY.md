@@ -1,40 +1,40 @@
 # Population Blink Rate Study
 
-Analyzed **80** individuals from random YouTube videos.
+Analyzed **90** individuals from random YouTube videos.
 
 ## Expected vs Observed
 
 | Metric | Expected | Observed | Observed (filtered <35) |
 |--------|----------|----------|------------------------|
-| Mean | ~17/min | 18.3/min | 14.6/min |
-| Median | ~17/min | 13.2/min | 11.9/min |
-| Std Dev | ~5/min | 14.5/min | — |
-| Very Low (<10/min) | 1-3% | 36.2% (29/80) | — |
-| Normal (15-20/min) | ~50% | 5.0% (4/80) | — |
+| Mean | ~17/min | 18.8/min | 15.0/min |
+| Median | ~17/min | 14.2/min | 12.2/min |
+| Std Dev | ~5/min | 14.2/min | — |
+| Very Low (<10/min) | 1-3% | 33.3% (30/90) | — |
+| Normal (15-20/min) | ~50% | 4.4% (4/90) | — |
 
 ## Distribution
 
 | Range | Count | Percentage | |
 |-------|-------|------------|---|
-| <10/min | 29 | 36.2% | ██████████████████ |
-| 10-15/min | 15 | 18.8% | █████████ |
-| 15-20/min | 4 | 5.0% | ██ |
-| 20-25/min | 9 | 11.2% | █████ |
-| 25-30/min | 7 | 8.8% | ████ |
-| >30/min | 16 | 20.0% | ██████████ |
+| <10/min | 30 | 33.3% | ████████████████ |
+| 10-15/min | 18 | 20.0% | ██████████ |
+| 15-20/min | 4 | 4.4% | ██ |
+| 20-25/min | 11 | 12.2% | ██████ |
+| 25-30/min | 9 | 10.0% | █████ |
+| >30/min | 18 | 20.0% | ██████████ |
 
 ## Interpretation
 
-- Sample size: 80 individuals
-- 29 individuals (36.2%) showed Very Low blink rates (<10/min)
+- Sample size: 90 individuals
+- 30 individuals (33.3%) showed Very Low blink rates (<10/min)
 - Expected psychopathy prevalence in population: 1-3% (Hare, 2003)
-- **Mismatch**: Our Very Low rate of 36.2% is not consistent with expected psychopathy prevalence
+- **Mismatch**: Our Very Low rate of 33.3% is not consistent with expected psychopathy prevalence
 
 ## Caveats
 
 - YouTube videos are biased toward public-facing individuals (may have different blink patterns)
 - Video quality, lighting, and camera angles affect detection accuracy
-- 16 subjects (20.0%) had rates >30/min which likely include false positives
+- 18 subjects (20.0%) had rates >30/min which likely include false positives
 - Blink rate alone cannot diagnose any condition
 
 ---

@@ -190,6 +190,10 @@ class BlinkStateMachine:
         # CNN confirmation tracking
         self._last_cnn_prob: Optional[float] = None
         self._cnn_saw_closed: bool = False  # True if CNN confirmed closed during this blink
+        # Per-subject noise detection: track EAR variance to detect jittery landmarks
+        self._recent_ears: deque[float] = deque(maxlen=30)  # Last 1s of EAR values
+        self._is_noisy: bool = False  # True if EAR variance is too high (suppress detection)
+        self._noise_check_counter: int = 0
 
     def update(self, ear: float, timestamp: float, head_pose: Optional[dict] = None, nose_tip: Optional[np.ndarray] = None, quality: float = 1.0, cnn_closed_prob: Optional[float] = None) -> Optional[BlinkEvent]:
         """Process a new EAR measurement and return a BlinkEvent if a blink completes.
@@ -209,9 +213,28 @@ class BlinkStateMachine:
         """
         self._last_cnn_prob = cnn_closed_prob
 
-        # Note: Moving average filtering was tested (width 2-3) but reduces ground
-        # truth accuracy by smoothing out real blink dips. Raw EAR + adaptive
-        # threshold works better for our use case.
+        # Per-subject noise detection: if EAR values are very jittery,
+        # the landmarks are unreliable and we should suppress detection.
+        # Check every 30 frames (~1s) to avoid per-frame overhead.
+        self._recent_ears.append(ear)
+        self._noise_check_counter += 1
+        if self._noise_check_counter >= 30 and len(self._recent_ears) >= 20:
+            self._noise_check_counter = 0
+            recent = list(self._recent_ears)
+            ear_std = float(np.std(recent))
+            ear_mean = float(np.mean(recent))
+            # Coefficient of variation: std/mean.
+            # Good subjects: CV=0.05-0.13, Bad subjects: CV=0.26+
+            # Threshold 0.20 catches worst outliers without hurting real blinkers
+            cv = ear_std / ear_mean if ear_mean > 0.05 else 0
+            self._is_noisy = cv > 0.20
+
+        if self._is_noisy:
+            if self.state != EyeState.OPEN:
+                self._reset_to_open()
+            self._prev_ear = ear
+            self._prev_timestamp = timestamp
+            return None
 
         # Calculate EAR velocity
         dt = max(timestamp - self._prev_timestamp, 0.001)
