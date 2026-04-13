@@ -5,58 +5,58 @@ Normal blink rate: 15-20 blinks/min.
 
 | # | Name | Avg BPM | Classification | Videos | Notes |
 |---|------|---------|---------------|--------|-------|
-| 1 | Robert Downey Jr | 4.1 | Very Low | 2 | Significantly below normal |
-| 2 | Jordan Peterson | 5.9 | Very Low | 2 | Significantly below normal |
-| 3 | Conor McGregor | 8.2 | Very Low | 2 | Significantly below normal |
-| 4 | Emmanuel Macron | 8.8 | Very Low | 2 | Significantly below normal |
-| 5 | Justin Trudeau | 11.0 | Low | 2 | Below normal |
-| 6 | Joe Biden | 11.1 | Low | 2 | Below normal |
-| 7 | Oprah Winfrey | 11.2 | Low | 2 | Below normal |
-| 8 | Sheryl Sandberg | 11.3 | Low | 2 | Below normal |
-| 9 | Jeff Bezos | 11.4 | Low | 2 | Below normal |
-| 10 | David Attenborough | 11.8 | Low | 2 | Below normal |
-| 11 | Tim Cook | 12.0 | Low | 2 | Below normal |
-| 12 | Barack Obama | 12.2 | Low | 2 | Below normal |
-| 13 | Volodymyr Zelenskyy | 12.3 | Low | 2 | Below normal |
-| 14 | Mary Barra | 12.8 | Low | 2 | Below normal |
-| 15 | Bob Iger | 13.0 | Low | 2 | Below normal |
-| 16 | Jacinda Ardern | 14.1 | Low | 2 | Below normal |
-| 17 | Tom Brady | 14.1 | Low | 2 | Below normal |
-| 18 | Sam Altman | 14.4 | Low | 2 | Below normal |
-| 19 | Neil deGrasse Tyson | 14.9 | Low | 2 | Below normal |
-| 20 | Sundar Pichai | 15.0 | Low | 2 |  |
-| 21 | Mark Zuckerberg | 15.2 | Normal | 2 |  |
-| 22 | Serena Williams | 16.6 | Normal | 2 |  |
-| 23 | Anthony Hopkins | 16.8 | Normal | 2 |  |
-| 24 | Narendra Modi | 17.1 | Normal | 2 |  |
-| 25 | Gordon Ramsay | 18.2 | Normal | 2 |  |
-| 26 | Warren Buffett | 18.3 | Normal | 2 |  |
-| 27 | Jensen Huang | 18.4 | Normal | 2 |  |
-| 28 | Joe Rogan | 18.7 | Normal | 2 |  |
-| 29 | Angela Merkel | 19.5 | Normal | 2 |  |
-| 30 | Jack Welch | 19.5 | Normal | 2 |  |
-| 31 | Boris Johnson | 19.9 | Normal | 2 |  |
-| 32 | Indra Nooyi | 20.1 | High | 2 |  |
-| 33 | Keanu Reeves | 20.3 | High | 2 |  |
-| 34 | Elon Musk | 20.5 | High | 2 |  |
-| 35 | Leonardo DiCaprio | 21.3 | High | 2 |  |
-| 36 | Satya Nadella | 21.6 | High | 2 |  |
-| 37 | Tom Hanks | 21.6 | High | 2 |  |
-| 38 | Scarlett Johansson | 22.3 | High | 2 |  |
-| 39 | Dwayne Johnson | 23.0 | High | 2 |  |
-| 40 | Cristiano Ronaldo | 25.0 | High | 2 |  |
-| 41 | Cate Blanchett | 25.3 | High | 2 | Above normal |
-| 42 | Jamie Dimon | 27.7 | High | 2 | Above normal |
-| 43 | Vladimir Putin | 29.3 | High | 2 | Above normal |
-| 44 | Richard Branson | 31.9 | High | 2 | Above normal |
-| 45 | Reed Hastings | 32.2 | High | 2 | Above normal |
-| 46 | Bill Gates | 32.5 | High | 2 | Above normal |
-| 47 | Morgan Freeman | 35.0 | High | 2 | Above normal |
-| 48 | Meryl Streep | 39.4 | High | 2 | Above normal |
-| 49 | Lisa Su | 52.6 | High | 2 | Above normal |
+| 1 | Robert Downey Jr | 5.3 | Very Low | 4 | Significantly below normal |
+| 2 | Jordan Peterson | 7.4 | Very Low | 4 | Significantly below normal |
+| 3 | Conor McGregor | 11.0 | Low | 4 | Below normal |
+| 4 | Narendra Modi | 14.0 | Low | 4 | Below normal |
+| 5 | Serena Williams | 14.3 | Low | 4 | Below normal |
+| 6 | Tim Cook | 14.4 | Low | 4 | Below normal |
+| 7 | Bob Iger | 14.4 | Low | 4 | Below normal |
+| 8 | Joe Biden | 14.6 | Low | 4 | Below normal |
+| 9 | Emmanuel Macron | 14.9 | Low | 4 | Below normal |
+| 10 | Mary Barra | 15.3 | Normal | 4 |  |
+| 11 | Mark Zuckerberg | 15.4 | Normal | 4 |  |
+| 12 | Sundar Pichai | 15.5 | Normal | 4 |  |
+| 13 | David Attenborough | 15.7 | Normal | 4 |  |
+| 14 | Justin Trudeau | 15.8 | Normal | 4 |  |
+| 15 | Oprah Winfrey | 16.3 | Normal | 4 |  |
+| 16 | Angela Merkel | 17.0 | Normal | 4 |  |
+| 17 | Anthony Hopkins | 17.0 | Normal | 4 |  |
+| 18 | Keanu Reeves | 17.3 | Normal | 4 |  |
+| 19 | Neil deGrasse Tyson | 17.3 | Normal | 4 |  |
+| 20 | Scarlett Johansson | 17.5 | Normal | 4 |  |
+| 21 | Barack Obama | 17.7 | Normal | 4 |  |
+| 22 | Volodymyr Zelenskyy | 17.9 | Normal | 4 |  |
+| 23 | Tom Brady | 17.9 | Normal | 4 |  |
+| 24 | Joe Rogan | 18.1 | Normal | 4 |  |
+| 25 | Sam Altman | 18.3 | Normal | 4 |  |
+| 26 | Jacinda Ardern | 18.4 | Normal | 4 |  |
+| 27 | Elon Musk | 19.1 | Normal | 4 |  |
+| 28 | Tom Hanks | 19.2 | Normal | 4 |  |
+| 29 | Sheryl Sandberg | 19.4 | Normal | 4 |  |
+| 30 | Jensen Huang | 19.5 | Normal | 4 |  |
+| 31 | Gordon Ramsay | 19.6 | Normal | 4 |  |
+| 32 | Cristiano Ronaldo | 19.9 | Normal | 4 |  |
+| 33 | Leonardo DiCaprio | 21.0 | High | 4 |  |
+| 34 | Reed Hastings | 21.3 | High | 4 |  |
+| 35 | Boris Johnson | 21.5 | High | 4 |  |
+| 36 | Dwayne Johnson | 21.6 | High | 4 |  |
+| 37 | Cate Blanchett | 23.7 | High | 4 |  |
+| 38 | Warren Buffett | 24.2 | High | 4 |  |
+| 39 | Morgan Freeman | 24.2 | High | 4 |  |
+| 40 | Satya Nadella | 26.7 | High | 4 | Above normal |
+| 41 | Jamie Dimon | 27.9 | High | 4 | Above normal |
+| 42 | Vladimir Putin | 28.2 | High | 4 | Above normal |
+| 43 | Jeff Bezos | 28.8 | High | 4 | Above normal |
+| 44 | Bill Gates | 32.9 | High | 4 | Above normal |
+| 45 | Meryl Streep | 34.2 | High | 4 | Above normal |
+| 46 | Jack Welch | 36.5 | High | 4 | Above normal |
+| 47 | Indra Nooyi | 44.6 | High | 4 | Above normal |
+| 48 | Lisa Su | 45.1 | High | 4 | Above normal |
 
 ### Subjects with errors
 
+- Richard Branson: No videos found
 - Michael Jordan: No videos found
 
 ---
