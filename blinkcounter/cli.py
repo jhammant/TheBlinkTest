@@ -107,8 +107,8 @@ def main():
 
     elif args.command == "gui":
         try:
-            from blinkcounter.gui.main_window import run_gui
-            run_gui()
+            from blinkcounter.main import main as gui_main
+            gui_main()
         except ImportError:
             print("GUI requires PyQt6. Install with: pip install theblinktest[gui]")
             sys.exit(1)
