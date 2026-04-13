@@ -33,3 +33,4 @@ test_accuracy.py
 .DS_Store
 common_person.png
 blinkcounter/models/*.model
+blinkcounter/training_data_rtbene/
