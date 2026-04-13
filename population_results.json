@@ -1053,5 +1053,71 @@
     "classification": "Low",
     "analyzable_s": 68.9,
     "visible_s": 105.7
+  },
+  {
+    "query": "TED talk unknown speaker",
+    "title": "Get comfortable with being uncomfortable | Luvvie Ajayi Jone",
+    "url": "https://www.youtube.com/watch?v=QijH4UAqGD8",
+    "time_s": 70.6,
+    "bpm": 39.4,
+    "blinks": 48,
+    "classification": "High",
+    "analyzable_s": 73.0,
+    "visible_s": 100.9
+  },
+  {
+    "query": "podcast interview guest",
+    "title": "How to Prepare for a Podcast Interview (As A Guest)",
+    "url": "https://www.youtube.com/watch?v=KVd_E3sy-Ro",
+    "time_s": 18.7,
+    "bpm": 34.8,
+    "blinks": 54,
+    "classification": "High",
+    "analyzable_s": 93.1,
+    "visible_s": 119.9
+  },
+  {
+    "query": "YouTube interview small channel",
+    "title": "The funniest police interview ever \ud83d\ude93\ud83d\udea8\ud83d\ude02 - BBC",
+    "url": "https://www.youtube.com/watch?v=MfLXsnN9bFA",
+    "time_s": 25.5,
+    "bpm": 11.8,
+    "blinks": 6,
+    "classification": "Low",
+    "analyzable_s": 30.5,
+    "visible_s": 79.0
+  },
+  {
+    "query": "YouTube interview small channel",
+    "title": "Job Interview *",
+    "url": "https://www.youtube.com/watch?v=ExJZAegsOis",
+    "time_s": 24.0,
+    "bpm": 9.3,
+    "blinks": 17,
+    "classification": "Very Low",
+    "analyzable_s": 109.8,
+    "visible_s": 113.0
+  },
+  {
+    "query": "local news interview",
+    "title": "It's been 6 years since these kids famously interrupted thei",
+    "url": "https://www.youtube.com/watch?v=Oa1TpZSE8Q8",
+    "time_s": 64.5,
+    "bpm": 9.0,
+    "blinks": 16,
+    "classification": "Very Low",
+    "analyzable_s": 106.4,
+    "visible_s": 118.9
+  },
+  {
+    "query": "local news interview",
+    "title": "INTERVIEW: Psychologist speaks on how people of color prepar",
+    "url": "https://www.youtube.com/watch?v=aclvKB2gHx4",
+    "time_s": 213.9,
+    "bpm": 59.8,
+    "blinks": 33,
+    "classification": "High",
+    "analyzable_s": 33.1,
+    "visible_s": 45.8
   }
 ]
