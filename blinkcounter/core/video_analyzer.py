@@ -25,6 +25,25 @@ from blinkcounter.core.models import AnalysisResult, BlinkEvent, Person
 logger = logging.getLogger(__name__)
 
 
+def _extract_single_eye_crop(frame: np.ndarray, eye_points: np.ndarray) -> np.ndarray | None:
+    """Extract a padded crop for a single eye (for RT-BENE)."""
+    x_min = int(eye_points[:, 0].min())
+    y_min = int(eye_points[:, 1].min())
+    x_max = int(eye_points[:, 0].max())
+    y_max = int(eye_points[:, 1].max())
+    w = max(x_max - x_min, 1)
+    h = max(y_max - y_min, 1)
+    pad_x, pad_y = int(w * 0.5), int(h * 0.8)
+    x_min = max(0, x_min - pad_x)
+    y_min = max(0, y_min - pad_y)
+    x_max = min(frame.shape[1], x_max + pad_x)
+    y_max = min(frame.shape[0], y_max + pad_y)
+    if x_max <= x_min or y_max <= y_min:
+        return None
+    crop = frame[y_min:y_max, x_min:x_max]
+    return crop if crop.size > 0 else None
+
+
 def _extract_eye_crop(frame: np.ndarray, left_eye: np.ndarray, right_eye: np.ndarray) -> np.ndarray | None:
     """Extract a padded eye crop from the frame using landmark points.
 
@@ -259,6 +278,11 @@ class VideoAnalyzer:
         ear_ts_buffers: dict[str, deque_type] = {}
         temporal_last_blink: dict[str, float] = {}  # Prevent double-counting
 
+        # RT-BENE pre-trained blink detector — disabled for now.
+        # The VGG16 model outputs very low probabilities for dlib eye crops
+        # (trained on different crop format). Needs calibration before use.
+        rt_bene = None
+
         # CNN eye classifier
         cnn = EyeStateClassifier() if self._use_cnn else None
         use_cnn = cnn is not None and cnn.is_available
@@ -374,13 +398,24 @@ class VideoAnalyzer:
 
                             # Blink detected if prob > 0.8 and not too close to last blink
                             if prob > 0.8 and (center_ts - temporal_last_blink[person.id]) > 0.3:
-                                from blinkcounter.core.models import BlinkEvent
-                                person.blink_events.append(BlinkEvent(
-                                    timestamp=center_ts,
-                                    person_id=person.id,
-                                    ear_value=min(seq),
-                                ))
-                                temporal_last_blink[person.id] = center_ts
+                                # RT-BENE confirmation: ask if eyes actually look closed
+                                confirmed = True
+                                if rt_bene is not None:
+                                    left_crop = _extract_single_eye_crop(frame, left_eye)
+                                    right_crop = _extract_single_eye_crop(frame, right_eye)
+                                    if left_crop is not None and right_crop is not None:
+                                        rt_prob = rt_bene.predict_blink(left_crop, right_crop)
+                                        if rt_prob is not None and rt_prob < 0.05:
+                                            confirmed = False  # RT-BENE very confident eyes open
+
+                                if confirmed:
+                                    from blinkcounter.core.models import BlinkEvent
+                                    person.blink_events.append(BlinkEvent(
+                                        timestamp=center_ts,
+                                        person_id=person.id,
+                                        ear_value=min(seq),
+                                    ))
+                                    temporal_last_blink[person.id] = center_ts
                     else:
                         # Fallback: EAR-only state machine
                         event = blink_machines[person.id].update(
