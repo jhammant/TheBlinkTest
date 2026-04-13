@@ -278,9 +278,8 @@ class VideoAnalyzer:
         ear_ts_buffers: dict[str, deque_type] = {}
         temporal_last_blink: dict[str, float] = {}  # Prevent double-counting
 
-        # RT-BENE pre-trained blink detector — disabled for now.
-        # The VGG16 model outputs very low probabilities for dlib eye crops
-        # (trained on different crop format). Needs calibration before use.
+        # RT-BENE disabled — VGG16 features don't activate on our 60x36 dlib crops.
+        # Finetuning FC layers alone insufficient. Would need full model retraining.
         rt_bene = None
 
         # CNN eye classifier
@@ -405,8 +404,8 @@ class VideoAnalyzer:
                                     right_crop = _extract_single_eye_crop(frame, right_eye)
                                     if left_crop is not None and right_crop is not None:
                                         rt_prob = rt_bene.predict_blink(left_crop, right_crop)
-                                        if rt_prob is not None and rt_prob < 0.05:
-                                            confirmed = False  # RT-BENE very confident eyes open
+                                        if rt_prob is not None and rt_prob < 0.3:
+                                            confirmed = False  # RT-BENE says eyes are open
 
                                 if confirmed:
                                     from blinkcounter.core.models import BlinkEvent
