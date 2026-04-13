@@ -34,3 +34,4 @@ test_accuracy.py
 common_person.png
 blinkcounter/models/*.model
 blinkcounter/training_data_rtbene/
+blinkcounter/training_data_large/
