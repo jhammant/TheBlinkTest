@@ -13,4 +13,8 @@ echo "Downloading MediaPipe face landmarker..."
 curl -L -o "$DIR/face_landmarker.task" \
     https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
 
+echo "Downloading RT-BENE VGG16 blink model (pre-trained)..."
+curl -L -o "$DIR/rt_bene_vgg16_allsubjects1.model" \
+    "https://imperialcollegelondon.box.com/shared/static/wwky1um443vgz9oy90zllv0s7474a5dj.model"
+
 echo "Done! Models downloaded to $DIR"

@@ -32,3 +32,4 @@ test_haar_blink.py
 test_accuracy.py
 .DS_Store
 common_person.png
+blinkcounter/models/*.model
