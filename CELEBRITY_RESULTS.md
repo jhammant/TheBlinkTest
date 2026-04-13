@@ -5,17 +5,49 @@ Normal blink rate: 15-20 blinks/min.
 
 | # | Name | Avg BPM | Classification | Videos | Notes |
 |---|------|---------|---------------|--------|-------|
-| 1 | Narendra Modi | 2.2 | Very Low | 4 | Significantly below normal |
-| 2 | Volodymyr Zelenskyy | 2.4 | Very Low | 4 | Significantly below normal |
-| 3 | Mark Zuckerberg | 3.4 | Very Low | 3 | Significantly below normal |
-| 4 | Barack Obama | 8.5 | Very Low | 4 | Significantly below normal |
-| 5 | Jacinda Ardern | 8.7 | Very Low | 4 | Significantly below normal |
-| 6 | Joe Biden | 11.2 | Low | 4 | Below normal |
-| 7 | Emmanuel Macron | 12.0 | Low | 4 | Below normal |
-| 8 | Justin Trudeau | 13.8 | Low | 4 | Below normal |
-| 9 | Angela Merkel | 18.1 | Normal | 4 |  |
-| 10 | Vladimir Putin | 18.6 | Normal | 4 |  |
-| 11 | Boris Johnson | 19.2 | Normal | 4 |  |
+| 1 | Robert Downey Jr | 4.7 | Very Low | 4 | Significantly below normal |
+| 2 | Volodymyr Zelenskyy | 4.8 | Very Low | 4 | Significantly below normal |
+| 3 | Tim Cook | 5.0 | Very Low | 4 | Significantly below normal |
+| 4 | Joe Biden | 5.1 | Very Low | 4 | Significantly below normal |
+| 5 | Jacinda Ardern | 5.3 | Very Low | 4 | Significantly below normal |
+| 6 | Keanu Reeves | 5.8 | Very Low | 4 | Significantly below normal |
+| 7 | Leonardo DiCaprio | 5.8 | Very Low | 4 | Significantly below normal |
+| 8 | Sam Altman | 6.8 | Very Low | 3 | Significantly below normal |
+| 9 | Elon Musk | 7.4 | Very Low | 4 | Significantly below normal |
+| 10 | Mark Zuckerberg | 7.7 | Very Low | 4 | Significantly below normal |
+| 11 | Narendra Modi | 7.8 | Very Low | 4 | Significantly below normal |
+| 12 | Emmanuel Macron | 8.1 | Very Low | 4 | Significantly below normal |
+| 13 | Barack Obama | 8.2 | Very Low | 4 | Significantly below normal |
+| 14 | Sundar Pichai | 8.4 | Very Low | 4 | Significantly below normal |
+| 15 | Jensen Huang | 8.8 | Very Low | 4 | Significantly below normal |
+| 16 | Angela Merkel | 9.4 | Very Low | 4 | Significantly below normal |
+| 17 | Boris Johnson | 9.4 | Very Low | 4 | Significantly below normal |
+| 18 | Cate Blanchett | 9.4 | Very Low | 4 | Significantly below normal |
+| 19 | Sheryl Sandberg | 9.7 | Very Low | 4 | Significantly below normal |
+| 20 | Scarlett Johansson | 9.7 | Very Low | 4 | Significantly below normal |
+| 21 | Dwayne Johnson | 9.8 | Very Low | 4 | Significantly below normal |
+| 22 | Reed Hastings | 9.9 | Very Low | 4 | Significantly below normal |
+| 23 | Jeff Bezos | 11.0 | Low | 3 | Below normal |
+| 24 | Mary Barra | 11.0 | Low | 4 | Below normal |
+| 25 | Bill Gates | 11.1 | Low | 4 | Below normal |
+| 26 | Warren Buffett | 11.3 | Low | 3 | Below normal |
+| 27 | Oprah Winfrey | 11.8 | Low | 4 | Below normal |
+| 28 | Anthony Hopkins | 11.9 | Low | 4 | Below normal |
+| 29 | Bob Iger | 12.3 | Low | 4 | Below normal |
+| 30 | Satya Nadella | 12.7 | Low | 4 | Below normal |
+| 31 | Vladimir Putin | 13.1 | Low | 4 | Below normal |
+| 32 | Justin Trudeau | 13.9 | Low | 4 | Below normal |
+| 33 | Morgan Freeman | 14.1 | Low | 4 | Below normal |
+| 34 | Meryl Streep | 15.7 | Normal | 4 |  |
+| 35 | Lisa Su | 17.3 | Normal | 4 |  |
+| 36 | Jack Welch | 17.5 | Normal | 4 |  |
+| 37 | Jamie Dimon | 19.1 | Normal | 4 |  |
+| 38 | Tom Hanks | 20.7 | High | 4 |  |
+| 39 | Indra Nooyi | 24.4 | High | 4 |  |
+
+### Subjects with errors
+
+- Richard Branson: No videos found
 
 ---
 

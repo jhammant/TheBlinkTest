@@ -258,7 +258,8 @@ def main() -> None:
 
     # Step 1: Search YouTube
     print(f"Searching YouTube for '{args.name}'...")
-    videos = search_youtube(args.name, max_results=args.videos + 2)  # Extra in case some fail
+    # Search for more than needed — some will be skipped (stills, bad data, download failures)
+    videos = search_youtube(args.name, max_results=args.videos * 3)
 
     if not videos:
         print("No videos found!")
@@ -275,102 +276,78 @@ def main() -> None:
 
     from blinkcounter.core.video_analyzer import VideoAnalyzer
     from blinkcounter.core.assessment import assess_person, format_assessment, format_multi_video_assessment
-    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    # Step 2: Download all videos first (sequential to avoid rate limits)
-    downloaded = []  # (title, local_path)
-    total_to_dl = min(args.videos, len(videos))
-    for i, v in enumerate(videos[:args.videos]):
+    # Step 2: Download and analyze videos until we have enough good results
+    # Skip videos that give bad data (stills, too short analyzable time, download failures)
+    all_results = []
+    attempted = 0
+    min_analyzable = 30  # Minimum seconds of analyzable video to accept
+    start = time.time()
+
+    for v in videos:
+        if len(all_results) >= args.videos:
+            break  # Got enough good results
+
+        attempted += 1
         mins = v["duration"] // 60
         secs = v["duration"] % 60
-        print(f"  [{i+1}/{total_to_dl}] {v['title'][:60]}")
-        print(f"         Downloading ({mins}:{secs:02d})...", end=" ", flush=True)
+        print(f"\n  [{len(all_results)+1}/{args.videos}] {v['title'][:60]}")
 
+        # Download
+        print(f"         Downloading ({mins}:{secs:02d})...", end=" ", flush=True)
         try:
             from blinkcounter.services.youtube import download_video as dl_video, _get_cache_path
             cached = _get_cache_path(v["url"]).exists()
             local_path = dl_video(v["url"], output_dir=output_dir)
             local_path = trim_video(local_path, args.max_duration)
             print("cached" if cached else "done")
-            downloaded.append((v["title"], local_path))
         except Exception as e:
-            print(f"failed: {e}")
+            print(f"failed ({e})")
+            continue
 
-    if not downloaded:
-        print("No videos downloaded successfully!")
-        sys.exit(1)
+        # Analyze
+        print("         Analyzing...", end="", flush=True)
+        analyze_start = time.time()
 
-    # Step 3: Analyze all videos in parallel
-    n_vids = len(downloaded)
-    print(f"\nAnalyzing {n_vids} videos in parallel...")
-    all_results = []
-    completed = [0]
-    import threading as _threading
-    _print_lock = _threading.Lock()
-
-    # Track progress per video
-    video_progress = {}
-
-    def _print_progress_line():
-        """Print a single line showing progress of all videos."""
-        parts = []
-        for i, (title, _) in enumerate(downloaded):
-            short = title[:20]
-            pct = video_progress.get(i, 0)
-            if pct >= 100:
-                parts.append(f"{short}: done")
-            else:
-                parts.append(f"{short}: {pct}%")
-        with _print_lock:
-            print(f"\r  {' | '.join(parts)}", end="", flush=True)
-
-    def _analyze_one(idx_title_path):
-        idx, title, path = idx_title_path
-        video_progress[idx] = 0
-
-        def _on_progress(val, msg=""):
+        def _progress(val, msg=""):
             pct = int(val * 100)
-            if pct > video_progress.get(idx, 0) + 5:  # Update every 5%
-                video_progress[idx] = pct
-                _print_progress_line()
+            elapsed_so_far = time.time() - analyze_start
+            print(f"\r         Analyzing... {pct}% ({elapsed_so_far:.0f}s)", end="", flush=True)
 
-        analyzer = VideoAnalyzer(high_confidence=args.high_confidence, frame_skip=args.frame_skip)
-        result = analyzer.analyze(path, _on_progress)
-        video_progress[idx] = 100
-        _print_progress_line()
-        return title, result
+        try:
+            analyzer = VideoAnalyzer(high_confidence=args.high_confidence, frame_skip=args.frame_skip)
+            result = analyzer.analyze(local_path, _progress)
+            elapsed = time.time() - analyze_start
+        except Exception as e:
+            print(f"\r         Analyzing... error: {e}")
+            continue
 
-    start = time.time()
-    indexed = [(i, t, p) for i, (t, p) in enumerate(downloaded)]
-    with ThreadPoolExecutor(max_workers=min(n_vids, 4)) as pool:
-        futures = {pool.submit(_analyze_one, itp): itp[1] for itp in indexed}
-        for future in as_completed(futures):
-            title = futures[future]
-            completed[0] += 1
-            try:
-                title, result = future.result()
-                elapsed = time.time() - start
-                if result.persons:
-                    n_persons = len(result.persons)
-                    main = max(result.persons, key=lambda p: p.total_visible_duration)
-                    analyzable = main.analyzable_duration
-                    with _print_lock:
-                        print(f"\n  [{completed[0]}/{n_vids}] {title[:50]}")
-                        if analyzable < 30:
-                            print(f"         skipped — only {analyzable:.0f}s analyzable (need 30s+)")
-                        else:
-                            print(f"         {n_persons} person(s), {main.blinks_per_minute:.1f} blinks/min "
-                                  f"({analyzable:.0f}s analyzable, {elapsed:.0f}s)")
-                            all_results.append((title, result))
-                else:
-                    with _print_lock:
-                        print(f"\n  [{completed[0]}/{n_vids}] {title[:45]}... no faces ({elapsed:.0f}s)")
-            except Exception as e:
-                with _print_lock:
-                    print(f"\n  {title[:45]}... error: {e}")
+        if not result.persons:
+            print(f"\r         Analyzing... no faces detected ({elapsed:.0f}s) — skipping")
+            continue
+
+        main = max(result.persons, key=lambda p: p.total_visible_duration)
+        analyzable = main.analyzable_duration
+
+        if analyzable < min_analyzable:
+            print(f"\r         Analyzing... only {analyzable:.0f}s analyzable ({elapsed:.0f}s) — skipping")
+            continue
+
+        if main.is_still_image:
+            print(f"\r         Analyzing... still image detected ({elapsed:.0f}s) — skipping")
+            continue
+
+        if main.blinks_per_minute < 3.0:
+            print(f"\r         Analyzing... {main.blinks_per_minute:.1f}/min too low — likely bad detection, skipping")
+            continue
+
+        n_persons = len(result.persons)
+        print(f"\r         Analyzing... done! {main.blinks_per_minute:.1f} blinks/min "
+              f"({analyzable:.0f}s analyzable, {n_persons} person(s), {elapsed:.0f}s)")
+        all_results.append((v["title"], result))
 
     total_elapsed = time.time() - start
-    print(f"\nAll analysis complete ({total_elapsed:.0f}s total)")
+    print(f"\n  Analyzed {attempted} videos, {len(all_results)} usable ({total_elapsed:.0f}s total)")
     print(f"{'='*60}")
 
     if len(all_results) < 1:
