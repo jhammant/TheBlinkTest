@@ -1,8 +1,8 @@
 {
   "Barack Obama": {
-    "avg_bpm": 17.7,
-    "classification": "Normal",
-    "videos_analyzed": 4,
+    "avg_bpm": 12.2,
+    "classification": "Low",
+    "videos_analyzed": 2,
     "per_video": [
       {
         "title": "President Barack Obama in Conversation with Marc Maron | WTF",
@@ -12,32 +12,18 @@
         "analyzable_s": 75.78411745078411
       },
       {
-        "title": "Barack Obama shares personal stories & experiences: Family, ",
-        "blinks": 47,
-        "bpm": 25.144038676087774,
-        "classification": "High",
-        "analyzable_s": 112.15382048715378
-      },
-      {
-        "title": "I asked President Obama if he's DEPRESSED!?",
-        "blinks": 41,
-        "bpm": 25.64389565217392,
-        "classification": "High",
-        "analyzable_s": 95.92926259592923
-      },
-      {
-        "title": "Barack Obama's 2006 Interview | Late Night with Conan O\u2019Brie",
-        "blinks": 22,
-        "bpm": 11.248336650554439,
-        "classification": "Low",
-        "analyzable_s": 117.3506840173508
+        "title": "Barack Obama BREAKS SILENCE on Trump's ape video, Bad Bunny,",
+        "blinks": 23,
+        "bpm": 15.69586337760911,
+        "classification": "Normal",
+        "analyzable_s": 87.92125458792125
       }
     ]
   },
   "Joe Biden": {
-    "avg_bpm": 14.6,
+    "avg_bpm": 11.1,
     "classification": "Low",
-    "videos_analyzed": 4,
+    "videos_analyzed": 2,
     "per_video": [
       {
         "title": "VP Joe Biden: We own the finish line",
@@ -52,27 +38,13 @@
         "bpm": 6.001780085295753,
         "classification": "Very Low",
         "analyzable_s": 179.94661327994663
-      },
-      {
-        "title": "FULL REMARKS: Former President Joe Biden pays tribute to Jes",
-        "blinks": 48,
-        "bpm": 15.220172809028917,
-        "classification": "Normal",
-        "analyzable_s": 189.222555889216
-      },
-      {
-        "title": "President-elect Joe Biden's victory speech in full",
-        "blinks": 60,
-        "bpm": 20.818875780707835,
-        "classification": "High",
-        "analyzable_s": 172.92000000000007
       }
     ]
   },
   "Vladimir Putin": {
-    "avg_bpm": 28.2,
+    "avg_bpm": 29.3,
     "classification": "High",
-    "videos_analyzed": 4,
+    "videos_analyzed": 2,
     "per_video": [
       {
         "title": "Exclusive: Tucker Carlson Interviews Vladimir Putin",
@@ -87,27 +59,13 @@
         "bpm": 20.952808988764055,
         "classification": "High",
         "analyzable_s": 160.3603603603603
-      },
-      {
-        "title": "'Trump harbors an unexplained sympathy for Vladimir Putin', ",
-        "blinks": 118,
-        "bpm": 42.37491022264783,
-        "classification": "High",
-        "analyzable_s": 167.08
-      },
-      {
-        "title": "Vladimir Putin interviewed by the Financial Times | FT",
-        "blinks": 23,
-        "bpm": 11.702849389416553,
-        "classification": "Low",
-        "analyzable_s": 117.92000000000002
       }
     ]
   },
   "Angela Merkel": {
-    "avg_bpm": 17.0,
+    "avg_bpm": 19.5,
     "classification": "Normal",
-    "videos_analyzed": 4,
+    "videos_analyzed": 2,
     "per_video": [
       {
         "title": "Extended interview: Angela Merkel",
@@ -122,27 +80,13 @@
         "bpm": 23.90791027154661,
         "classification": "High",
         "analyzable_s": 135.52000000000015
-      },
-      {
-        "title": "Merkel on May's Brexit plan: 'I'm not frustrated but curious",
-        "blinks": 9,
-        "bpm": 17.833553500660507,
-        "classification": "Normal",
-        "analyzable_s": 30.27999999999999
-      },
-      {
-        "title": "The DW Interview with German Chancellor Angela Merkel | DW N",
-        "blinks": 29,
-        "bpm": 10.965465086967486,
-        "classification": "Low",
-        "analyzable_s": 158.67999999999992
       }
     ]
   },
   "Boris Johnson": {
-    "avg_bpm": 21.5,
-    "classification": "High",
-    "videos_analyzed": 4,
+    "avg_bpm": 19.9,
+    "classification": "Normal",
+    "videos_analyzed": 2,
     "per_video": [
       {
         "title": "FULL INTERVIEW: Boris Johnson uncut and unleashed | 60 Minut",
@@ -157,20 +101,933 @@
         "bpm": 24.060494958753484,
         "classification": "High",
         "analyzable_s": 174.55999999999966
-      },
+      }
+    ]
+  },
+  "Jacinda Ardern": {
+    "avg_bpm": 14.1,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
       {
-        "title": "In full: Boris Johnson interview  - BBC News",
-        "blinks": 44,
-        "bpm": 27.59197324414716,
-        "classification": "High",
-        "analyzable_s": 95.67999999999999
-      },
-      {
-        "title": "Whether Boris Johnson is attempting to salvage his political",
-        "blinks": 43,
-        "bpm": 18.674001158077587,
+        "title": "Jacinda Ardern's Kiwi Accent Is Easily Understood In Boston",
+        "blinks": 26,
+        "bpm": 16.9395652173913,
         "classification": "Normal",
-        "analyzable_s": 138.16000000000003
+        "analyzable_s": 92.09209209209212
+      },
+      {
+        "title": "Jacinda Ardern Wanted To Be A Hobbit | The Graham Norton Sho",
+        "blinks": 11,
+        "bpm": 11.216859279401769,
+        "classification": "Low",
+        "analyzable_s": 58.839999999999996
+      }
+    ]
+  },
+  "Emmanuel Macron": {
+    "avg_bpm": 8.8,
+    "classification": "Very Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "FULL INTERVIEW: French President Emmanuel Macron on Brexit a",
+        "blinks": 21,
+        "bpm": 16.83591662212729,
+        "classification": "Normal",
+        "analyzable_s": 74.83999999999963
+      },
+      {
+        "title": "Emmanuel Macron interview (English): Getting \u201ctough\u201d on Brex",
+        "blinks": 1,
+        "bpm": 0.8008542445274961,
+        "classification": "Very Low",
+        "analyzable_s": 74.91999999999999
+      }
+    ]
+  },
+  "Justin Trudeau": {
+    "avg_bpm": 11.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Qui gagnera : Justin Trudeau ou Da\u2019 Bomb? | Hot Ones Qu\u00e9bec",
+        "blinks": 27,
+        "bpm": 16.23246492985972,
+        "classification": "Normal",
+        "analyzable_s": 99.80000000000001
+      },
+      {
+        "title": "Justin Trudeau Interview with Peter Mansbridge",
+        "blinks": 11,
+        "bpm": 5.831426886792439,
+        "classification": "Very Low",
+        "analyzable_s": 113.17984651318011
+      }
+    ]
+  },
+  "Narendra Modi": {
+    "avg_bpm": 17.1,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "PM Modi Interview | \"I Hold Such A Position...\": PM On Handl",
+        "blinks": 6,
+        "bpm": 6.2413314840499305,
+        "classification": "Very Low",
+        "analyzable_s": 57.68
+      },
+      {
+        "title": "Frankly Speaking with Narendra Modi - Full Interview",
+        "blinks": 91,
+        "bpm": 27.86282914880635,
+        "classification": "High",
+        "analyzable_s": 195.95999999999665
+      }
+    ]
+  },
+  "Volodymyr Zelenskyy": {
+    "avg_bpm": 12.3,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "President of Ukraine: Volodymyr Zelenskyy",
+        "blinks": 36,
+        "bpm": 15.397775876817796,
+        "classification": "Normal",
+        "analyzable_s": 140.27999999999997
+      },
+      {
+        "title": "Exclusive: Zelenskyy describes Russian intelligence sharing ",
+        "blinks": 14,
+        "bpm": 9.224926777143704,
+        "classification": "Very Low",
+        "analyzable_s": 91.05763333333334
+      }
+    ]
+  },
+  "Mark Zuckerberg": {
+    "avg_bpm": 15.2,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Joe Rogan Experience #2255 - Mark Zuckerberg",
+        "blinks": 38,
+        "bpm": 14.88705882352943,
+        "classification": "Low",
+        "analyzable_s": 153.15315315315297
+      },
+      {
+        "title": "The Future Mark Zuckerberg Is Trying To Build",
+        "blinks": 20,
+        "bpm": 15.443478260869565,
+        "classification": "Normal",
+        "analyzable_s": 77.7027027027027
+      }
+    ]
+  },
+  "Tim Cook": {
+    "avg_bpm": 12.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Tim Cook",
+        "blinks": 29,
+        "bpm": 11.713342318059302,
+        "classification": "Low",
+        "analyzable_s": 148.5485485485485
+      },
+      {
+        "title": "Apple CEO Tim Cook on iPhone 17 launch: It's the most import",
+        "blinks": 23,
+        "bpm": 12.323778307508944,
+        "classification": "Low",
+        "analyzable_s": 111.97864531197861
+      }
+    ]
+  },
+  "Satya Nadella": {
+    "avg_bpm": 21.6,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The Advice That Changed Satya Nadella's Life",
+        "blinks": 79,
+        "bpm": 30.393196405648276,
+        "classification": "High",
+        "analyzable_s": 155.95595595595591
+      },
+      {
+        "title": "Satya Nadella \u2013 How Microsoft thinks about AGI",
+        "blinks": 17,
+        "bpm": 12.824079706345033,
+        "classification": "Low",
+        "analyzable_s": 79.53787120453794
+      }
+    ]
+  },
+  "Sundar Pichai": {
+    "avg_bpm": 15.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The history and future of AI at Google, with Sundar Pichai",
+        "blinks": 23,
+        "bpm": 10.140018387986517,
+        "classification": "Low",
+        "analyzable_s": 136.0944277610944
+      },
+      {
+        "title": "Full interview: Google CEO Sundar Pichai on the \u2018AI boom\u2019 an",
+        "blinks": 49,
+        "bpm": 19.822006472491893,
+        "classification": "Normal",
+        "analyzable_s": 148.3200000000001
+      }
+    ]
+  },
+  "Jensen Huang": {
+    "avg_bpm": 18.4,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "NVIDIA CEO Jensen Huang's Vision for the Future",
+        "blinks": 15,
+        "bpm": 18.042140468227412,
+        "classification": "Normal",
+        "analyzable_s": 49.88321654988326
+      },
+      {
+        "title": "Jensen Huang: NVIDIA - The $4 Trillion Company & the AI Revo",
+        "blinks": 21,
+        "bpm": 18.8528207688467,
+        "classification": "Normal",
+        "analyzable_s": 66.8335001668336
+      }
+    ]
+  },
+  "Sam Altman": {
+    "avg_bpm": 14.4,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The Power and Responsibility of Sam Altman",
+        "blinks": 13,
+        "bpm": 10.587228260869578,
+        "classification": "Low",
+        "analyzable_s": 73.67367367367359
+      },
+      {
+        "title": "FULL INTERVIEW: OpenAI CEO Sam Altman Speaks on AI Scaling a",
+        "blinks": 34,
+        "bpm": 18.261290322580674,
+        "classification": "Normal",
+        "analyzable_s": 111.71171171171153
+      }
+    ]
+  },
+  "Elon Musk": {
+    "avg_bpm": 20.5,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Elon Musk: A Different Conversation w/ Nikhil Kamath | Full ",
+        "blinks": 11,
+        "bpm": 7.735583684950766,
+        "classification": "Very Low",
+        "analyzable_s": 85.32000000000008
+      },
+      {
+        "title": "Elon Musk on DOGE, AI, & Are we in a Simulation? | KMP Ep.18",
+        "blinks": 69,
+        "bpm": 33.335787211176836,
+        "classification": "High",
+        "analyzable_s": 124.19085752419066
+      }
+    ]
+  },
+  "Bill Gates": {
+    "avg_bpm": 32.5,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Bill Gates on AI, Trump's aid cuts, the ",
+        "blinks": 155,
+        "bpm": 54.74779021803181,
+        "classification": "High",
+        "analyzable_s": 169.86986986986992
+      },
+      {
+        "title": "Bill Gates Regrets 'Every Minute' With Epstein, Explosive In",
+        "blinks": 20,
+        "bpm": 10.288065843621395,
+        "classification": "Low",
+        "analyzable_s": 116.64000000000006
+      }
+    ]
+  },
+  "Jeff Bezos": {
+    "avg_bpm": 11.4,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Jeff Bezos Talks Amazon, Blue Origin, Family, And Wealth",
+        "blinks": 31,
+        "bpm": 18.936458598726123,
+        "classification": "Normal",
+        "analyzable_s": 98.22322322322317
+      },
+      {
+        "title": "Jeff Bezos: Amazon and Blue Origin | Lex Fridman Podcast #40",
+        "blinks": 10,
+        "bpm": 3.928415539065912,
+        "classification": "Very Low",
+        "analyzable_s": 152.73333333333326
+      }
+    ]
+  },
+  "Lisa Su": {
+    "avg_bpm": 52.6,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Lisa Su in Conversation with Ryan Patel | SXSW 2024",
+        "blinks": 223,
+        "bpm": 94.47487336553164,
+        "classification": "High",
+        "analyzable_s": 141.6249582916253
+      },
+      {
+        "title": "AMD's CEO Wants to Chip Away at Nvidia's Lead | The Circuit ",
+        "blinks": 11,
+        "bpm": 10.764734693877552,
+        "classification": "Low",
+        "analyzable_s": 61.31131131131131
+      }
+    ]
+  },
+  "Jamie Dimon": {
+    "avg_bpm": 27.7,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Jamie Dimon cautions that Iran war \u201cincreases the odds of ba",
+        "blinks": 99,
+        "bpm": 41.484835420914656,
+        "classification": "High",
+        "analyzable_s": 143.18485151818484
+      },
+      {
+        "title": "Jamie Dimon on Leadership, Career Resilience, and the Future",
+        "blinks": 40,
+        "bpm": 14.01118949160788,
+        "classification": "Low",
+        "analyzable_s": 171.29166666666669
+      }
+    ]
+  },
+  "Warren Buffett": {
+    "avg_bpm": 18.3,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Watch CNBC's full interview with Berkshire Hathaway CEO Warr",
+        "blinks": 72,
+        "bpm": 25.19369527145357,
+        "classification": "High",
+        "analyzable_s": 171.4714714714716
+      },
+      {
+        "title": "Warren Buffett shares advice on becoming successful",
+        "blinks": 33,
+        "bpm": 11.384287769784173,
+        "classification": "Low",
+        "analyzable_s": 173.92392392392392
+      }
+    ]
+  },
+  "Bob Iger": {
+    "avg_bpm": 13.0,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The Walt Disney Company Former CEO and Chairman Robert A. Ig",
+        "blinks": 28,
+        "bpm": 16.29436893203885,
+        "classification": "Normal",
+        "analyzable_s": 103.10310310310301
+      },
+      {
+        "title": "Bob Iger: \u201cThe Ride of a Lifetime\u201d | Super Soul Sunday S9E15",
+        "blinks": 19,
+        "bpm": 9.613337084974676,
+        "classification": "Very Low",
+        "analyzable_s": 118.58525191858527
+      }
+    ]
+  },
+  "Mary Barra": {
+    "avg_bpm": 12.8,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Watch CNBC's full interview with GM CEO Mary Barra",
+        "blinks": 32,
+        "bpm": 11.046726818967167,
+        "classification": "Low",
+        "analyzable_s": 173.8071404738072
+      },
+      {
+        "title": "Extended interview: General Motors CEO Mary Barra",
+        "blinks": 25,
+        "bpm": 14.539133247089271,
+        "classification": "Low",
+        "analyzable_s": 103.16983650316978
+      }
+    ]
+  },
+  "Indra Nooyi": {
+    "avg_bpm": 20.1,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Conversation with PepsiCo CEO Indra Nooyi and David Bradley",
+        "blinks": 56,
+        "bpm": 24.833341553637503,
+        "classification": "High",
+        "analyzable_s": 135.30196863530188
+      },
+      {
+        "title": "Indra Nooyi On Being One Of The Longest-Serving Female CEOs",
+        "blinks": 16,
+        "bpm": 15.271337579617786,
+        "classification": "Normal",
+        "analyzable_s": 62.862862862863054
+      }
+    ]
+  },
+  "Reed Hastings": {
+    "avg_bpm": 32.2,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Blitzscaling 16: Reed Hastings on Building a Streaming Empir",
+        "blinks": 56,
+        "bpm": 26.104782890473103,
+        "classification": "High",
+        "analyzable_s": 128.71204537871205
+      },
+      {
+        "title": "Reed Hastings, Chairman and Co-Founder of Netflix",
+        "blinks": 38,
+        "bpm": 38.216778523489914,
+        "classification": "High",
+        "analyzable_s": 59.65965965965969
+      }
+    ]
+  },
+  "Sheryl Sandberg": {
+    "avg_bpm": 11.3,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Sheryl Sandberg Interview: From Google to Facebook",
+        "blinks": 34,
+        "bpm": 12.90937500000001,
+        "classification": "Low",
+        "analyzable_s": 158.02469135802457
+      },
+      {
+        "title": "Talks with Sheryl Sandberg, Former Facebook COO | Super Soul",
+        "blinks": 15,
+        "bpm": 9.59893238434164,
+        "classification": "Very Low",
+        "analyzable_s": 93.76042709376038
+      }
+    ]
+  },
+  "Jack Welch": {
+    "avg_bpm": 19.5,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "From the archives: Jack Welch on 60 Minutes",
+        "blinks": 32,
+        "bpm": 19.672615384615437,
+        "classification": "Normal",
+        "analyzable_s": 97.59759759759733
+      },
+      {
+        "title": "An Interview with Jack Welch on Leadership and the Welch Way",
+        "blinks": 55,
+        "bpm": 19.422820109976435,
+        "classification": "Normal",
+        "analyzable_s": 169.9032365699032
+      }
+    ]
+  },
+  "Richard Branson": {
+    "avg_bpm": 31.9,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Richard Branson: How A Dyslexic Drop-out Build A Billion Dol",
+        "blinks": 55,
+        "bpm": 26.66451195862959,
+        "classification": "High",
+        "analyzable_s": 123.76000000000006
+      },
+      {
+        "title": "LSBF Great Minds Series: Richard Branson on Education & Entr",
+        "blinks": 87,
+        "bpm": 37.14773697694279,
+        "classification": "High",
+        "analyzable_s": 140.51999999999998
+      }
+    ]
+  },
+  "Oprah Winfrey": {
+    "avg_bpm": 11.2,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Oprah and Kristin Cabot in an Exclusive Interview about the ",
+        "blinks": 21,
+        "bpm": 12.117833935018064,
+        "classification": "Low",
+        "analyzable_s": 103.97897897897887
+      },
+      {
+        "title": "HQ Whitney Houston on Oprah (2009) Interview",
+        "blinks": 12,
+        "bpm": 10.302885761984285,
+        "classification": "Low",
+        "analyzable_s": 69.88333333333316
+      }
+    ]
+  },
+  "Tom Hanks": {
+    "avg_bpm": 21.6,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "TOM HANKS Reveals The 'Countenance Theory' That CHANGED His ",
+        "blinks": 42,
+        "bpm": 25.183194398132592,
+        "classification": "High",
+        "analyzable_s": 100.0667334000672
+      },
+      {
+        "title": "Tom Hanks: Through The Years | The Graham Norton Show",
+        "blinks": 44,
+        "bpm": 17.934782608695638,
+        "classification": "Normal",
+        "analyzable_s": 147.2000000000001
+      }
+    ]
+  },
+  "Keanu Reeves": {
+    "avg_bpm": 20.3,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Keanu Reeves' Top 10 Moments! | The Graham Norton Show",
+        "blinks": 29,
+        "bpm": 12.164429530201335,
+        "classification": "Low",
+        "analyzable_s": 143.04000000000008
+      },
+      {
+        "title": "Keanu Reeves On Acting Opposite Martin Scorsese And Susan Lu",
+        "blinks": 48,
+        "bpm": 28.420678300954926,
+        "classification": "High",
+        "analyzable_s": 101.33466800133455
+      }
+    ]
+  },
+  "Robert Downey Jr": {
+    "avg_bpm": 4.1,
+    "classification": "Very Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Robert Downey Jr. storms out of interview",
+        "blinks": 8,
+        "bpm": 5.335910380420766,
+        "classification": "Very Low",
+        "analyzable_s": 89.95653333333334
+      },
+      {
+        "title": "Robert Downey Jr walks out of interview when asked questions",
+        "blinks": 3,
+        "bpm": 2.8266331658291457,
+        "classification": "Very Low",
+        "analyzable_s": 63.68
+      }
+    ]
+  },
+  "Scarlett Johansson": {
+    "avg_bpm": 22.3,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Scarlett Johansson",
+        "blinks": 67,
+        "bpm": 23.200346620450606,
+        "classification": "High",
+        "analyzable_s": 173.27327327327328
+      },
+      {
+        "title": "Scarlett Johansson Takes The Colbert Questionert",
+        "blinks": 36,
+        "bpm": 21.343620178041526,
+        "classification": "High",
+        "analyzable_s": 101.20120120120129
+      }
+    ]
+  },
+  "Leonardo DiCaprio": {
+    "avg_bpm": 21.3,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Leonardo DiCaprio on his favourite films, his love of cinema",
+        "blinks": 20,
+        "bpm": 16.260162601626035,
+        "classification": "Normal",
+        "analyzable_s": 73.79999999999991
+      },
+      {
+        "title": "Leonardo DiCaprio & Jennifer Lawrence | Actors on Actors",
+        "blinks": 33,
+        "bpm": 26.43233853006682,
+        "classification": "High",
+        "analyzable_s": 74.90824157490823
+      }
+    ]
+  },
+  "Meryl Streep": {
+    "avg_bpm": 39.4,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Meryl Streep\u2019s Miranda Priestly Is Like \u201cIf Mike Nichols And",
+        "blinks": 53,
+        "bpm": 27.84241893076249,
+        "classification": "High",
+        "analyzable_s": 114.21421421421421
+      },
+      {
+        "title": "Meryl Streep's Son Gave Her Marijuana Cream",
+        "blinks": 42,
+        "bpm": 50.97837280132317,
+        "classification": "High",
+        "analyzable_s": 49.432727282629
+      }
+    ]
+  },
+  "Dwayne Johnson": {
+    "avg_bpm": 23.0,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Extended interview: Dwayne \"The Rock\" Johnson",
+        "blinks": 87,
+        "bpm": 36.17188439306357,
+        "classification": "High",
+        "analyzable_s": 144.31097764431104
+      },
+      {
+        "title": "Joe Rogan Experience #2063 - The Rock",
+        "blinks": 26,
+        "bpm": 9.744310129220505,
+        "classification": "Very Low",
+        "analyzable_s": 160.09342676009348
+      }
+    ]
+  },
+  "Cate Blanchett": {
+    "avg_bpm": 25.3,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Cate Blanchett on growing food, multiculturalism, and a Chri",
+        "blinks": 9,
+        "bpm": 14.047866805411044,
+        "classification": "Low",
+        "analyzable_s": 38.43999999999996
+      },
+      {
+        "title": "Cate Blanchett on Hypnotizing Her Chickens and Standing Ovat",
+        "blinks": 34,
+        "bpm": 36.50077611940285,
+        "classification": "High",
+        "analyzable_s": 55.88922255588943
+      }
+    ]
+  },
+  "Morgan Freeman": {
+    "avg_bpm": 35.0,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Morgan Freeman | Full Q&A | Oxford Union",
+        "blinks": 22,
+        "bpm": 15.061615700593347,
+        "classification": "Normal",
+        "analyzable_s": 87.63999999999994
+      },
+      {
+        "title": "Morgan Freeman on Old White Men Presidents, Shawshank\u2019s 30th",
+        "blinks": 98,
+        "bpm": 55.0268852459016,
+        "classification": "High",
+        "analyzable_s": 106.85685685685692
+      }
+    ]
+  },
+  "Anthony Hopkins": {
+    "avg_bpm": 16.8,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "The Day Anthony Hopkins Quit Drinking | The Interview",
+        "blinks": 41,
+        "bpm": 25.0769387755102,
+        "classification": "High",
+        "analyzable_s": 98.0980980980981
+      },
+      {
+        "title": "Anthony Hopkins | Armchair Expert with Dax Shepard",
+        "blinks": 16,
+        "bpm": 8.499615952732649,
+        "classification": "Very Low",
+        "analyzable_s": 112.94627961294621
+      }
+    ]
+  },
+  "Cristiano Ronaldo": {
+    "avg_bpm": 25.0,
+    "classification": "High",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "My FULL Interview With Piers Morgan",
+        "blinks": 58,
+        "bpm": 24.301675977653613,
+        "classification": "High",
+        "analyzable_s": 143.2000000000001
+      },
+      {
+        "title": "The FULL Cristiano Ronaldo Interview With Piers Morgan | Par",
+        "blinks": 63,
+        "bpm": 25.71428571428573,
+        "classification": "High",
+        "analyzable_s": 146.99999999999991
+      }
+    ]
+  },
+  "Serena Williams": {
+    "avg_bpm": 16.6,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Serena Williams on Why She Chose to Use GLP-1 Medication",
+        "blinks": 35,
+        "bpm": 11.895104895104891,
+        "classification": "Low",
+        "analyzable_s": 176.54320987654327
+      },
+      {
+        "title": "Spike Sessions with Serena Williams & Alexis Ohanian | Full ",
+        "blinks": 25,
+        "bpm": 21.34362017804154,
+        "classification": "High",
+        "analyzable_s": 70.27861194527863
+      }
+    ]
+  },
+  "Tom Brady": {
+    "avg_bpm": 14.1,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Tom Brady | Champion Mindset",
+        "blinks": 20,
+        "bpm": 10.852142426071207,
+        "classification": "Low",
+        "analyzable_s": 110.57724391057731
+      },
+      {
+        "title": "Tom Brady Reveals What It's Like Being The GOAT, If He Could",
+        "blinks": 37,
+        "bpm": 17.28701526469634,
+        "classification": "Normal",
+        "analyzable_s": 128.42008675342004
+      }
+    ]
+  },
+  "Michael Jordan": {
+    "error": "No videos found"
+  },
+  "Conor McGregor": {
+    "avg_bpm": 8.2,
+    "classification": "Very Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "EXCLUSIVE: Conor McGregor On UFC Return, BMF Title, Chandler",
+        "blinks": 27,
+        "bpm": 12.232569846463626,
+        "classification": "Low",
+        "analyzable_s": 132.43333333333337
+      },
+      {
+        "title": "Exclusive: Conor McGregor Full Interview",
+        "blinks": 3,
+        "bpm": 4.1133455210237555,
+        "classification": "Very Low",
+        "analyzable_s": 43.76000000000011
+      }
+    ]
+  },
+  "Jordan Peterson": {
+    "avg_bpm": 5.9,
+    "classification": "Very Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Jordan Peterson: \u201cThere was plenty of motivation to take me ",
+        "blinks": 15,
+        "bpm": 7.530120481927715,
+        "classification": "Very Low",
+        "analyzable_s": 119.51999999999995
+      },
+      {
+        "title": "Jordan Peterson | Full interview with NZ Herald journalist S",
+        "blinks": 8,
+        "bpm": 4.319654427645788,
+        "classification": "Very Low",
+        "analyzable_s": 111.12
+      }
+    ]
+  },
+  "Neil deGrasse Tyson": {
+    "avg_bpm": 14.9,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Neil deGrasse Tyson: The Harsh Truth About Horoscopes (sorry",
+        "blinks": 30,
+        "bpm": 14.841688654353554,
+        "classification": "Low",
+        "analyzable_s": 121.28000000000007
+      },
+      {
+        "title": "Joe Rogan Experience #1658 - Neil deGrasse Tyson",
+        "blinks": 39,
+        "bpm": 14.902209944751379,
+        "classification": "Low",
+        "analyzable_s": 157.02369035702372
+      }
+    ]
+  },
+  "David Attenborough": {
+    "avg_bpm": 11.8,
+    "classification": "Low",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Sir David Attenborough Was Charged By A Rhino - The Graham N",
+        "blinks": 26,
+        "bpm": 16.055990119390692,
+        "classification": "Normal",
+        "analyzable_s": 97.16000000000001
+      },
+      {
+        "title": "Interview with BBC's legendary Sir David Attenborough | SVT/",
+        "blinks": 15,
+        "bpm": 7.591093117408908,
+        "classification": "Very Low",
+        "analyzable_s": 118.55999999999997
+      }
+    ]
+  },
+  "Gordon Ramsay": {
+    "avg_bpm": 18.2,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Gordon Ramsay Exclusive: It\u2019s Time To Tell My Full Story",
+        "blinks": 17,
+        "bpm": 6.50178480367159,
+        "classification": "Very Low",
+        "analyzable_s": 156.88000000000014
+      },
+      {
+        "title": "Gordon Ramsay Gets Brutally Honest with Jason Fox | Men's He",
+        "blinks": 19,
+        "bpm": 29.84293193717274,
+        "classification": "High",
+        "analyzable_s": 38.200000000000045
+      }
+    ]
+  },
+  "Joe Rogan": {
+    "avg_bpm": 18.7,
+    "classification": "Normal",
+    "videos_analyzed": 2,
+    "per_video": [
+      {
+        "title": "Joe Rogan: The Truth About Aliens (He Finally Says It)",
+        "blinks": 10,
+        "bpm": 16.365870307167235,
+        "classification": "Normal",
+        "analyzable_s": 36.66166166166166
+      },
+      {
+        "title": "Joe Rogan Experience #2479 - Bob Lazar & Luigi Vendittelli",
+        "blinks": 46,
+        "bpm": 20.962290927521593,
+        "classification": "High",
+        "analyzable_s": 131.66499833166466
       }
     ]
   }
