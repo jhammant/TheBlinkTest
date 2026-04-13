@@ -228,15 +228,38 @@ class VideoAnalyzer:
         import queue
         import threading
 
+        from collections import deque as deque_type
         from blinkcounter.core.face_tracker import FaceTracker
         from blinkcounter.core.eye_classifier import EyeStateClassifier
 
         tracker = FaceTracker(detect_interval=10)
         blink_machines: dict[str, BlinkStateMachine] = {}
 
-        # CNN eye classifier — disabled by default until training data improves.
-        # The CNN was trained on EAR-labeled data so it shares EAR's biases.
-        # Enable with VideoAnalyzer(use_cnn=True) once better training data exists.
+        # Temporal blink model — trained on UBFC ground truth (F1=0.717)
+        temporal_model = None
+        temporal_window = 13
+        try:
+            import torch
+            from pathlib import Path as P2
+            from train_temporal_blink_model import TemporalBlinkCNN
+            model_path = P2(__file__).parent.parent / "models" / "temporal_blink_model.pth"
+            if model_path.exists():
+                device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+                ckpt = torch.load(model_path, map_location=device, weights_only=True)
+                temporal_window = ckpt.get("window_size", 13)
+                temporal_model = TemporalBlinkCNN(window_size=temporal_window).to(device)
+                temporal_model.load_state_dict(ckpt["model_state_dict"])
+                temporal_model.eval()
+                logger.info("Temporal blink model loaded (F1=%.3f)", ckpt.get("val_f1", 0))
+        except Exception as e:
+            logger.debug("Temporal model not available: %s", e)
+
+        # Per-person EAR buffers for temporal model
+        ear_buffers: dict[str, deque_type] = {}
+        ear_ts_buffers: dict[str, deque_type] = {}
+        temporal_last_blink: dict[str, float] = {}  # Prevent double-counting
+
+        # CNN eye classifier
         cnn = EyeStateClassifier() if self._use_cnn else None
         use_cnn = cnn is not None and cnn.is_available
         if use_cnn:
@@ -327,13 +350,46 @@ class VideoAnalyzer:
                     if person.id not in blink_machines:
                         blink_machines[person.id] = BlinkStateMachine(person.id)
 
-                    event = blink_machines[person.id].update(
-                        avg_ear, timestamp, head_pose,
-                        nose_tip=all_landmarks[30], quality=quality,
-                        cnn_closed_prob=cnn_closed_prob,
-                    )
-                    if event is not None:
-                        person.blink_events.append(event)
+                    # Temporal model path: use trained CNN on EAR sequences
+                    if temporal_model is not None:
+                        import torch as _torch
+                        # Buffer EAR values per person
+                        if person.id not in ear_buffers:
+                            ear_buffers[person.id] = deque_type(maxlen=temporal_window)
+                            ear_ts_buffers[person.id] = deque_type(maxlen=temporal_window)
+                            temporal_last_blink[person.id] = -1.0
+
+                        ear_buffers[person.id].append(avg_ear)
+                        ear_ts_buffers[person.id].append(timestamp)
+
+                        # Once we have a full window, run temporal model
+                        if len(ear_buffers[person.id]) == temporal_window:
+                            seq = list(ear_buffers[person.id])
+                            center_ts = ear_ts_buffers[person.id][temporal_window // 2]
+                            inp = _torch.tensor([seq], dtype=_torch.float32).unsqueeze(0)
+                            device = next(temporal_model.parameters()).device
+                            with _torch.no_grad():
+                                logit = temporal_model(inp.to(device)).squeeze()
+                                prob = _torch.sigmoid(logit).item()
+
+                            # Blink detected if prob > 0.8 and not too close to last blink
+                            if prob > 0.8 and (center_ts - temporal_last_blink[person.id]) > 0.3:
+                                from blinkcounter.core.models import BlinkEvent
+                                person.blink_events.append(BlinkEvent(
+                                    timestamp=center_ts,
+                                    person_id=person.id,
+                                    ear_value=min(seq),
+                                ))
+                                temporal_last_blink[person.id] = center_ts
+                    else:
+                        # Fallback: EAR-only state machine
+                        event = blink_machines[person.id].update(
+                            avg_ear, timestamp, head_pose,
+                            nose_tip=all_landmarks[30], quality=quality,
+                            cnn_closed_prob=cnn_closed_prob,
+                        )
+                        if event is not None:
+                            person.blink_events.append(event)
 
                     # Track analyzable duration per person
                     total_quality_frames += 1
