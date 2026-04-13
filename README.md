@@ -12,23 +12,30 @@ Research shows that spontaneous blink rate correlates with emotional reactivity 
 - Generates a psychopathy risk assessment with behavioral indicators
 - Searches YouTube by name to auto-analyze public figures
 
+## Install
+
+```bash
+pip install theblinktest
+```
+
+On first run, it will automatically download the required dlib face model (~95MB).
+
+### From Source
+
+```bash
+git clone https://github.com/jhammant/TheBlinkTest.git
+cd TheBlinkTest
+pip install -e .
+```
+
 ## Quick Start
 
 ```bash
-# Clone
-git clone https://github.com/jhammant/TheBlinkTest.git
-cd TheBlinkTest
-
-# Setup
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-
-# Download required model (68-landmark face predictor, ~95MB)
-bash blinkcounter/models/download_models.sh
-
 # Analyze someone by name (searches YouTube automatically)
-python -m blinkcounter.tools.analyze_by_name "Oprah Winfrey"
+theblinktest analyze "Oprah Winfrey"
+
+# Or use the shortcut command
+blink-analyze "David Attenborough"
 ```
 
 ## Usage
@@ -37,20 +44,26 @@ python -m blinkcounter.tools.analyze_by_name "Oprah Winfrey"
 
 ```bash
 # Search for videos of a person and analyze their blink rate
-python -m blinkcounter.tools.analyze_by_name "David Attenborough"
+theblinktest analyze "David Attenborough"
 
 # Analyze more videos for better accuracy
-python -m blinkcounter.tools.analyze_by_name "Taylor Swift" --videos 5
+theblinktest analyze "Taylor Swift" --videos 5
 
-# Limit analysis duration per video
-python -m blinkcounter.tools.analyze_by_name "Gordon Ramsay" --max-duration 120
+# High-confidence mode — only uses clear frontal segments (best for long videos)
+theblinktest analyze "Gordon Ramsay" --high-confidence
+
+# Control speed vs accuracy (1=every frame, 2=2x faster, 3=3x faster)
+theblinktest analyze "Elon Musk" --frame-skip 2
 ```
 
 ### Analyze Local Videos
 
 ```bash
-# Single video
-python -m blinkcounter.tools.show_faces video.mp4
+# Analyze a local video file
+theblinktest video path/to/video.mp4
+
+# Analyze a YouTube URL directly
+theblinktest video "https://www.youtube.com/watch?v=..."
 
 # Multiple videos — finds the common person and aggregates their rate
 python -m blinkcounter.tools.analyze_person video1.mp4 video2.mp4 video3.mp4
@@ -59,7 +72,8 @@ python -m blinkcounter.tools.analyze_person video1.mp4 video2.mp4 video3.mp4
 ### GUI Application
 
 ```bash
-python -m blinkcounter.main
+# Requires: pip install theblinktest[gui]
+theblinktest gui
 ```
 
 Features:
@@ -128,15 +142,15 @@ Features:
 
 ### Accuracy
 
-Validated against a ground-truth video with known blink count:
+Validated against three academic ground-truth datasets:
 
-| Test Case | Expected | Detected | Accuracy |
-|-----------|----------|----------|----------|
-| Ground truth (27 blinks) | 27 | 25 | 93% |
-| Zero-blink subject | 0 | 0 | 100% |
-| Head movement (teleprompter) | ~20/min | 25.2/min | Plausible |
-| Single person presentation | 15-20/min | 16.0/min | Normal range |
-| Interview (multi-person) | >0 | 11.6/min | Detected |
+| Dataset | Blinks | Recall | Precision | F1 Score |
+|---------|--------|--------|-----------|----------|
+| Talking Face (1 subject) | 61 | 96.7% | 92.2% | **0.944** |
+| EyeBlink8 (4 subjects, 8 videos) | 408 | 96.1% | 68.3% | **0.798** |
+| UBFC-rPPG (42 subjects) | 220 | ~40% | ~45% | 0.428 |
+
+Recall is consistently high (96%+) — the detector catches nearly all real blinks. Videos downloaded from YouTube are cached at `~/.cache/blinkcounter/videos/` for instant re-analysis.
 
 ### CNN Eye Classifier (Optional)
 
