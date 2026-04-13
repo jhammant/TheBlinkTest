@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 class BatchAnalyzer:
     """Analyzes multiple videos and matches persons across them."""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, high_confidence: bool = False) -> None:
+        self._high_confidence = high_confidence
 
     def analyze(
         self,
@@ -77,7 +77,7 @@ class BatchAnalyzer:
                     overall = (idx + p) / total_sources
                     progress_callback(overall, f"Analyzing: {video_label}")
 
-            analyzer = VideoAnalyzer()
+            analyzer = VideoAnalyzer(high_confidence=self._high_confidence)
             result = analyzer.analyze(video_path, _video_progress)
             # Override video_source with the original URL/path
             result.video_source = source.path_or_url

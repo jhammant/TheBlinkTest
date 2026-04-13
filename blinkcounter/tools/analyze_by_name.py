@@ -10,10 +10,19 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from pathlib import Path
+
+# Suppress noisy warnings
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
+# Suppress yt-dlp error output globally
+import logging as _logging
+_logging.getLogger("yt_dlp").setLevel(_logging.CRITICAL)
 
 import cv2
 import numpy as np
@@ -26,25 +35,75 @@ def search_youtube(query: str, max_results: int = 5) -> list[dict]:
     """
     import yt_dlp
 
-    search_query = f"ytsearch{max_results}:{query} interview speech talk"
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
+        "ignoreerrors": True,
         "simulate": True,
-        "default_search": f"ytsearch{max_results}",
+        "cachedir": False,
     }
 
+    full_name_lower = query.lower().strip()
+
+    # Search with multiple queries to maximise coverage
+    search_queries = [
+        f"ytsearch{max_results * 5}:{query}",  # Plain name (matches YouTube's top results)
+        f"ytsearch{max_results * 3}:{query} interview",
+        f"ytsearch{max_results * 3}:{query} speech talk",
+    ]
+
+    seen_urls = set()
+    scored = []
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        results = ydl.extract_info(search_query, download=False)
-        videos = []
-        for entry in results.get("entries", []):
-            if entry and entry.get("duration", 0) > 30:
-                videos.append({
-                    "title": entry.get("title", "Unknown"),
-                    "url": entry.get("webpage_url", ""),
-                    "duration": entry.get("duration", 0),
-                })
-        return videos
+        for sq in search_queries:
+            try:
+                # Suppress yt-dlp stderr output (ERROR lines for unavailable videos)
+                import io
+                old_stderr = sys.stderr
+                sys.stderr = io.StringIO()
+                try:
+                    results = ydl.extract_info(sq, download=False)
+                finally:
+                    sys.stderr = old_stderr
+            except Exception:
+                continue
+
+            for entry in results.get("entries", []):
+                if not entry or entry.get("duration", 0) < 120:
+                    continue  # Skip videos under 2 min — too short for reliable rates
+                url = entry.get("webpage_url", "")
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+
+                title_lower = entry.get("title", "").lower()
+                desc_lower = entry.get("description", "").lower()
+
+                # Check for full name as a phrase in title or description
+                in_title = full_name_lower in title_lower
+                in_desc = full_name_lower in desc_lower
+
+                if not in_title and not in_desc:
+                    continue
+
+                # Prefer longer videos (more data = more reliable rate)
+                dur = entry.get("duration", 0)
+                duration_bonus = min(dur / 300, 2.0)  # Up to 2.0 for 10min+
+                score = (3 if in_title else 0) + (1 if in_desc else 0) + duration_bonus
+                scored.append((score, entry))
+
+    # Sort by score (best matches first) and take top results
+    scored.sort(key=lambda x: x[0], reverse=True)
+    videos = []
+    for _, entry in scored[:max_results]:
+        videos.append({
+            "title": entry.get("title", "Unknown"),
+            "url": entry.get("webpage_url", ""),
+            "duration": entry.get("duration", 0),
+        })
+
+    return videos
 
 
 def download_video(url: str, output_dir: str) -> str:
@@ -182,6 +241,15 @@ def main() -> None:
         "--output-dir", default=None,
         help="Directory to save downloaded videos (default: temp dir)",
     )
+    parser.add_argument(
+        "--high-confidence", action="store_true",
+        help="Only analyze high-quality segments (frontal, well-lit, stable). "
+             "Discards ambiguous periods for more accurate rates on long videos.",
+    )
+    parser.add_argument(
+        "--frame-skip", type=int, default=1,
+        help="Process every Nth frame. 1=every frame (accurate), 2=2x faster, 3=3x faster (default: 1)",
+    )
     args = parser.parse_args()
 
     print(f"\n{'='*60}")
@@ -203,62 +271,129 @@ def main() -> None:
         print(f"  [{mins}:{secs:02d}] {v['title']}")
     print()
 
-    # Step 2: Download and analyze
     output_dir = args.output_dir or tempfile.mkdtemp(prefix="blinkcounter_")
 
     from blinkcounter.core.video_analyzer import VideoAnalyzer
     from blinkcounter.core.assessment import assess_person, format_assessment, format_multi_video_assessment
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    all_results = []
-    analyzed = 0
-
-    for v in videos:
-        if analyzed >= args.videos:
-            break
-
-        print(f"{'─'*60}")
-        print(f"Video {analyzed + 1}: {v['title'][:50]}...")
+    # Step 2: Download all videos first (sequential to avoid rate limits)
+    downloaded = []  # (title, local_path)
+    total_to_dl = min(args.videos, len(videos))
+    for i, v in enumerate(videos[:args.videos]):
+        mins = v["duration"] // 60
+        secs = v["duration"] % 60
+        print(f"  [{i+1}/{total_to_dl}] {v['title'][:60]}")
+        print(f"         Downloading ({mins}:{secs:02d})...", end=" ", flush=True)
 
         try:
-            print("  Downloading...", end=" ", flush=True)
-            local_path = download_video(v["url"], output_dir)
-            print("done")
-
-            # Trim if needed
+            from blinkcounter.services.youtube import download_video as dl_video, _get_cache_path
+            cached = _get_cache_path(v["url"]).exists()
+            local_path = dl_video(v["url"], output_dir=output_dir)
             local_path = trim_video(local_path, args.max_duration)
-
-            print("  Analyzing...", end=" ", flush=True)
-            start = time.time()
-            analyzer = VideoAnalyzer()
-            result = analyzer.analyze(local_path, lambda val, msg="": None)
-            elapsed = time.time() - start
-            print(f"done ({elapsed:.0f}s)")
-
-            if result.persons:
-                main_person = max(result.persons, key=lambda p: p.total_visible_duration)
-                print(f"  Main person: {main_person.blink_count} blinks, "
-                      f"{main_person.blinks_per_minute:.1f}/min [{main_person.classification.value}]")
-                all_results.append((v["title"], result))
-                analyzed += 1
-            else:
-                print("  No faces detected, skipping")
-
+            print("cached" if cached else "done")
+            downloaded.append((v["title"], local_path))
         except Exception as e:
-            print(f"  Error: {e}")
-            continue
+            print(f"failed: {e}")
 
-    print(f"\n{'='*60}")
+    if not downloaded:
+        print("No videos downloaded successfully!")
+        sys.exit(1)
+
+    # Step 3: Analyze all videos in parallel
+    n_vids = len(downloaded)
+    print(f"\nAnalyzing {n_vids} videos in parallel...")
+    all_results = []
+    completed = [0]
+    import threading as _threading
+    _print_lock = _threading.Lock()
+
+    # Track progress per video
+    video_progress = {}
+
+    def _print_progress_line():
+        """Print a single line showing progress of all videos."""
+        parts = []
+        for i, (title, _) in enumerate(downloaded):
+            short = title[:20]
+            pct = video_progress.get(i, 0)
+            if pct >= 100:
+                parts.append(f"{short}: done")
+            else:
+                parts.append(f"{short}: {pct}%")
+        with _print_lock:
+            print(f"\r  {' | '.join(parts)}", end="", flush=True)
+
+    def _analyze_one(idx_title_path):
+        idx, title, path = idx_title_path
+        video_progress[idx] = 0
+
+        def _on_progress(val, msg=""):
+            pct = int(val * 100)
+            if pct > video_progress.get(idx, 0) + 5:  # Update every 5%
+                video_progress[idx] = pct
+                _print_progress_line()
+
+        analyzer = VideoAnalyzer(high_confidence=args.high_confidence, frame_skip=args.frame_skip)
+        result = analyzer.analyze(path, _on_progress)
+        video_progress[idx] = 100
+        _print_progress_line()
+        return title, result
+
+    start = time.time()
+    indexed = [(i, t, p) for i, (t, p) in enumerate(downloaded)]
+    with ThreadPoolExecutor(max_workers=min(n_vids, 4)) as pool:
+        futures = {pool.submit(_analyze_one, itp): itp[1] for itp in indexed}
+        for future in as_completed(futures):
+            title = futures[future]
+            completed[0] += 1
+            try:
+                title, result = future.result()
+                elapsed = time.time() - start
+                if result.persons:
+                    n_persons = len(result.persons)
+                    main = max(result.persons, key=lambda p: p.total_visible_duration)
+                    analyzable = main.analyzable_duration
+                    with _print_lock:
+                        print(f"\n  [{completed[0]}/{n_vids}] {title[:50]}")
+                        if analyzable < 30:
+                            print(f"         skipped — only {analyzable:.0f}s analyzable (need 30s+)")
+                        else:
+                            print(f"         {n_persons} person(s), {main.blinks_per_minute:.1f} blinks/min "
+                                  f"({analyzable:.0f}s analyzable, {elapsed:.0f}s)")
+                            all_results.append((title, result))
+                else:
+                    with _print_lock:
+                        print(f"\n  [{completed[0]}/{n_vids}] {title[:45]}... no faces ({elapsed:.0f}s)")
+            except Exception as e:
+                with _print_lock:
+                    print(f"\n  {title[:45]}... error: {e}")
+
+    total_elapsed = time.time() - start
+    print(f"\nAll analysis complete ({total_elapsed:.0f}s total)")
+    print(f"{'='*60}")
 
     if len(all_results) < 1:
         print("No videos were successfully analyzed!")
         sys.exit(1)
 
-    # Step 3: Find common person across videos
+    # Step 3: Match the TARGET PERSON across all videos
+    # The person appearing in the most videos is likely the search subject
     if len(all_results) > 1:
-        print("\nMatching faces across videos...")
+        print(f"\nMatching '{args.name}' across {len(all_results)} videos...")
         common = find_common_person(all_results)
 
         if common and common["video_count"] > 1:
+            # Show the matched person's face
+            if common.get("face_thumbnail") is not None:
+                face_path = os.path.join(output_dir, "matched_face.png")
+                cv2.imwrite(face_path, common["face_thumbnail"])
+                print(f"  Matched face saved: {face_path}")
+                try:
+                    subprocess.Popen(["open", face_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except OSError:
+                    pass
+
             print(format_multi_video_assessment(
                 person_label=args.name,
                 per_video_rates=common["per_video_rates"],
@@ -282,4 +417,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\nAnalysis interrupted by user.")
+        sys.exit(0)

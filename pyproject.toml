@@ -3,22 +3,41 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "blinkcounter"
-version = "0.1.0"
-description = "Analyze blink rates in videos to detect anomalous patterns"
+name = "theblinktest"
+version = "0.2.0"
+description = "Analyze blink rates in videos to detect anomalous blinking patterns. Supports YouTube URLs and local video files."
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
+authors = [
+    {name = "Jon Hammant"},
+]
+keywords = ["blink", "detection", "video", "analysis", "eye", "psychopathy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
 dependencies = [
-    "mediapipe>=0.10.0",
     "opencv-python>=4.8.0",
+    "dlib>=19.24.0",
     "face-recognition>=1.3.0",
     "yt-dlp>=2024.0",
-    "PyQt6>=6.5.0",
-    "matplotlib>=3.7.0",
     "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
+gui = [
+    "PyQt6>=6.5.0",
+    "matplotlib>=3.7.0",
+]
 ml = [
     "torch>=2.0.0",
     "torchvision>=0.15.0",
@@ -27,9 +46,23 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
 ]
+all = [
+    "theblinktest[gui,ml]",
+]
 
 [project.scripts]
-blinkcounter = "blinkcounter.main:main"
+theblinktest = "blinkcounter.cli:main"
+blink-analyze = "blinkcounter.tools.analyze_by_name:main"
+
+[project.urls]
+Homepage = "https://github.com/jhammant/TheBlinkTest"
+Repository = "https://github.com/jhammant/TheBlinkTest"
+
+[tool.setuptools.packages.find]
+include = ["blinkcounter*"]
+
+[tool.setuptools.package-data]
+blinkcounter = ["models/download_models.sh"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

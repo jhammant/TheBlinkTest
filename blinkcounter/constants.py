@@ -15,7 +15,7 @@ MAX_BLINK_DURATION_MS = 400  # Above = voluntary eye closure
 CONSECUTIVE_FRAMES_FOR_BLINK = 2  # Requires 2+ frames below threshold
 
 # Video processing
-VIDEO_FRAME_SKIP = 3  # Process every Nth frame (at 30fps = 10 samples/sec)
+VIDEO_FRAME_SKIP = 1  # Process every frame for maximum accuracy
 
 # Face re-identification
 FACE_MATCH_TOLERANCE = 0.7  # face_recognition encoding distance threshold (higher = more permissive)

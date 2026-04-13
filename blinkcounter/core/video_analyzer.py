@@ -179,17 +179,26 @@ def _analyze_chunk(
 class VideoAnalyzer:
     """Analyzes a video file for blink detection across tracked faces."""
 
-    def __init__(self, max_workers: int = 0, use_cnn: bool = False) -> None:
+    def __init__(self, max_workers: int = 0, use_cnn: bool = False, high_confidence: bool = False, frame_skip: int = 0) -> None:
         """Initialize with optional worker count.
 
         Args:
             max_workers: Number of parallel workers. 0 = auto (CPU count).
             use_cnn: Whether to use CNN eye classifier for blink confirmation.
+            high_confidence: Only count blinks during high-quality detection
+                periods (frontal face, good lighting, stable landmarks).
+                Discards ambiguous segments — best for long videos where
+                you have plenty of data and want accuracy over coverage.
+            frame_skip: Process every Nth frame. 0 = use default from constants.
+                1 = every frame (most accurate), 2 = every other (2x faster),
+                3 = every 3rd (3x faster, ~96% recall).
         """
         if max_workers <= 0:
             max_workers = max(1, mp_proc.cpu_count() or 4)
         self._max_workers = max_workers
         self._use_cnn = use_cnn
+        self._high_confidence = high_confidence
+        self._frame_skip = frame_skip if frame_skip > 0 else VIDEO_FRAME_SKIP
 
     def analyze(
         self,
@@ -254,24 +263,12 @@ class VideoAnalyzer:
         tracker = FaceTracker(detect_interval=10)
         blink_machines: dict[str, BlinkStateMachine] = {}
 
-        # Temporal blink model — trained on UBFC ground truth (F1=0.717)
+        # Temporal blink model — disabled. Trained on UBFC (F1=0.428) but
+        # overcounts massively on YouTube videos (~120-180/min vs expected 15-20).
+        # The EAR state machine (F1=0.798-0.944 on EyeBlink8/TalkingFace) is
+        # far more reliable as the primary detector.
         temporal_model = None
         temporal_window = 13
-        try:
-            import torch
-            from pathlib import Path as P2
-            from train_temporal_blink_model import TemporalBlinkCNN
-            model_path = P2(__file__).parent.parent / "models" / "temporal_blink_model.pth"
-            if model_path.exists():
-                device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-                ckpt = torch.load(model_path, map_location=device, weights_only=True)
-                temporal_window = ckpt.get("window_size", 13)
-                temporal_model = TemporalBlinkCNN(window_size=temporal_window).to(device)
-                temporal_model.load_state_dict(ckpt["model_state_dict"])
-                temporal_model.eval()
-                logger.info("Temporal blink model loaded (F1=%.3f)", ckpt.get("val_f1", 0))
-        except Exception as e:
-            logger.debug("Temporal model not available: %s", e)
 
         # Per-person EAR buffers for temporal model
         ear_buffers: dict[str, deque_type] = {}
@@ -282,8 +279,16 @@ class VideoAnalyzer:
         # Finetuning FC layers alone insufficient. Would need full model retraining.
         rt_bene = None
 
-        # CNN eye classifier
-        cnn = EyeStateClassifier() if self._use_cnn else None
+        # High-confidence mode: stricter quality threshold, discard ambiguous periods
+        if self._high_confidence:
+            quality_threshold = 0.35  # Stricter than default 0.2 but not too aggressive
+            logger.info("High-confidence mode: quality_threshold=%.1f (discarding ambiguous segments)", quality_threshold)
+        else:
+            quality_threshold = QUALITY_THRESHOLD
+
+        # CNN eye classifier — auto-enable in high-confidence mode
+        use_cnn_flag = self._use_cnn or self._high_confidence
+        cnn = EyeStateClassifier() if use_cnn_flag else None
         use_cnn = cnn is not None and cnn.is_available
         if use_cnn:
             logger.info("CNN eye classifier loaded — using ensemble detection")
@@ -299,6 +304,8 @@ class VideoAnalyzer:
         reader_done = threading.Event()
         tracker_done = threading.Event()
 
+        skip = self._frame_skip
+
         def reader_worker():
             """Read frames from video into queue."""
             cap = cv2.VideoCapture(video_path)
@@ -308,7 +315,8 @@ class VideoAnalyzer:
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    frame_queue.put((fn, frame))
+                    if skip <= 1 or fn % skip == 0:
+                        frame_queue.put((fn, frame))
                     fn += 1
             finally:
                 cap.release()
@@ -339,9 +347,15 @@ class VideoAnalyzer:
         prev_timestamp: dict[str, float] = {}  # person_id -> last timestamp
         total_analyzable_frames = 0
         total_quality_frames = 0
+        still_image_abort = False
         try:
             while True:
-                item = tracked_queue.get()
+                try:
+                    item = tracked_queue.get(timeout=1.0)
+                except queue.Empty:
+                    if tracker_done.is_set():
+                        break
+                    continue
                 if item is None:
                     break
                 fn, timestamp, tracked_faces, frame = item
@@ -427,7 +441,7 @@ class VideoAnalyzer:
 
                     # Track analyzable duration per person
                     total_quality_frames += 1
-                    if quality >= QUALITY_THRESHOLD:
+                    if quality >= quality_threshold:
                         total_analyzable_frames += 1
                         if person.id in prev_timestamp:
                             dt = timestamp - prev_timestamp[person.id]
@@ -440,7 +454,24 @@ class VideoAnalyzer:
                 frames_processed += 1
                 frame_number = fn + 1
 
-                if progress_callback and total_frames > 0 and frames_processed % 200 == 0:
+                # Early abort: if after ~20s all faces are still images, skip the rest
+                if not still_image_abort and timestamp > 20.0 and frames_processed > 100:
+                    all_still = True
+                    for tf in tracker._tracked_faces:
+                        if len(tf.center_history) >= 10:
+                            centers = np.array(tf.center_history)
+                            if float(np.std(centers[:, 0])) > 1.0 or float(np.std(centers[:, 1])) > 1.0:
+                                all_still = False
+                                break
+                        else:
+                            all_still = False
+                            break
+                    if all_still and tracker._tracked_faces:
+                        logger.info("Still image detected after 20s — aborting analysis")
+                        still_image_abort = True
+                        break
+
+                if progress_callback and total_frames > 0 and frames_processed % 100 == 0:
                     progress_callback(
                         min(frames_processed / total_frames, 1.0),
                         f"Analyzing frame {frames_processed}/{total_frames}",
@@ -450,6 +481,29 @@ class VideoAnalyzer:
             tracker_thread.join(timeout=5)
 
         persons = tracker.get_persons()
+
+        # Filter out still images (static photos, podcast graphics)
+        still_count = sum(1 for p in persons if p.is_still_image)
+        if still_count:
+            logger.info("Filtered %d still-image person(s)", still_count)
+            persons = [p for p in persons if not p.is_still_image]
+
+        # High-confidence post-filter: discard blinks from low-quality periods
+        if self._high_confidence:
+            for p in persons:
+                before = len(p.blink_events)
+                if p.analyzable_duration < 3.0:
+                    p.blink_events.clear()
+                    logger.info(
+                        "High-confidence: dropped %s — only %.1fs analyzable (need 3s+)",
+                        p.label, p.analyzable_duration,
+                    )
+                after = len(p.blink_events)
+                if before != after:
+                    logger.info(
+                        "High-confidence: %s kept %d/%d blinks",
+                        p.label, after, before,
+                    )
 
         # Log quality stats
         if total_quality_frames > 0:

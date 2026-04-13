@@ -161,11 +161,11 @@ def download_and_trim(url: str, output_dir: str, max_seconds: int = 180) -> str 
         return None
 
 
-def analyze_video(video_path: str) -> dict | None:
+def analyze_video(video_path: str, high_confidence: bool = False, frame_skip: int = 3) -> dict | None:
     """Analyze a video and return results."""
     try:
         from blinkcounter.core.video_analyzer import VideoAnalyzer
-        analyzer = VideoAnalyzer()
+        analyzer = VideoAnalyzer(high_confidence=high_confidence, frame_skip=frame_skip)
         result = analyzer.analyze(video_path, lambda v, m="": None)
 
         if not result.persons:
@@ -175,12 +175,15 @@ def analyze_video(video_path: str) -> dict | None:
         if main.total_visible_duration < 5:
             return None
 
+        analyzable_pct = (main.analyzable_duration / main.total_visible_duration * 100
+                          if main.total_visible_duration > 0 else 0)
         return {
             "blink_count": main.blink_count,
             "blinks_per_minute": main.blinks_per_minute,
             "classification": main.classification.value,
             "visible_seconds": main.total_visible_duration,
             "analyzable_seconds": main.analyzable_duration,
+            "analyzable_pct": analyzable_pct,
             "person_count": result.person_count,
         }
     except Exception as e:
@@ -189,13 +192,24 @@ def analyze_video(video_path: str) -> dict | None:
 
 
 def main():
-    output_dir = tempfile.mkdtemp(prefix="blinkcounter_celeb_")
-    results_file = Path(__file__).parent / "celebrity_results.json"
-    report_file = Path(__file__).parent / "CELEBRITY_RESULTS.md"
+    import argparse
+    parser = argparse.ArgumentParser(description="Celebrity blink rate analysis")
+    parser.add_argument("--high-confidence", action="store_true",
+                        help="Only analyze high-quality segments for more accurate rates")
+    parser.add_argument("--fresh", action="store_true",
+                        help="Ignore existing results and re-analyze all subjects")
+    parser.add_argument("--frame-skip", type=int, default=3,
+                        help="Process every Nth frame (default: 3 for speed)")
+    cli_args = parser.parse_args()
 
-    # Load existing results to resume
+    output_dir = tempfile.mkdtemp(prefix="blinkcounter_celeb_")
+    suffix = "_hc" if cli_args.high_confidence else ""
+    results_file = Path(__file__).parent / f"celebrity_results{suffix}.json"
+    report_file = Path(__file__).parent / f"CELEBRITY_RESULTS{suffix}.md"
+
+    # Load existing results to resume (unless --fresh)
     existing = {}
-    if results_file.exists():
+    if results_file.exists() and not cli_args.fresh:
         with open(results_file) as f:
             existing = json.load(f)
 
@@ -235,7 +249,7 @@ def main():
 
             print(f"    Analyzing...", end=" ", flush=True)
             start = time.time()
-            result = analyze_video(local)
+            result = analyze_video(local, high_confidence=cli_args.high_confidence, frame_skip=cli_args.frame_skip)
             elapsed = time.time() - start
 
             if result:

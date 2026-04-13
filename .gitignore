@@ -35,3 +35,9 @@ common_person.png
 blinkcounter/models/*.model
 blinkcounter/training_data_rtbene/
 blinkcounter/training_data_large/
+celebrity_results*.json
+ground_truth_results.json
+multi_dataset_results.json
+*.png
+train_temporal_multi_dataset.py
+extract_real_eye_crops.py

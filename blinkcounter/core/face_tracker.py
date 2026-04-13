@@ -51,6 +51,7 @@ class _TrackedFace:
     frames_visible: int = 0  # Total frames this face has been visible
     active: bool = True  # Whether the correlation tracker is still valid
     frames_since_inactive: int = 0  # Frames since tracker became inactive
+    center_history: list = field(default_factory=list)  # Recent face centers for movement detection
 
 
 class FaceTracker:
@@ -108,7 +109,18 @@ class FaceTracker:
         return output
 
     def get_persons(self) -> list[Person]:
-        """Return all tracked persons."""
+        """Return all tracked persons, with still-image detection."""
+        # Check each tracked face for movement — if face barely moved, it's a still image
+        for tf in self._tracked_faces:
+            if len(tf.center_history) >= 10:
+                centers = np.array(tf.center_history)
+                # Standard deviation of face center position
+                std_x = float(np.std(centers[:, 0]))
+                std_y = float(np.std(centers[:, 1]))
+                # Real video: face moves at least a few pixels from breathing/micro-movements
+                # Still image: std < 1 pixel
+                if std_x < 1.0 and std_y < 1.0:
+                    tf.person.is_still_image = True
         return list(self._persons)
 
     def reset(self) -> None:
@@ -194,7 +206,14 @@ class FaceTracker:
             x_max = min(frame.shape[1], rect.right())
             y_max = min(frame.shape[0], rect.bottom())
 
-            face_crop = frame[y_min:y_max, x_min:x_max]
+            # Padded face crop for better thumbnails
+            fw, fh = x_max - x_min, y_max - y_min
+            pad_x, pad_y = int(fw * 0.3), int(fh * 0.2)
+            crop_x1 = max(0, x_min - pad_x)
+            crop_y1 = max(0, y_min - pad_y)
+            crop_x2 = min(frame.shape[1], x_max + pad_x)
+            crop_y2 = min(frame.shape[0], y_max + pad_y)
+            face_crop = frame[crop_y1:crop_y2, crop_x1:crop_x2]
 
             # Try to match to existing tracked face using spatial + encoding
             best_tf_idx, needs_encoding = self._find_best_tracked_match(
@@ -212,6 +231,8 @@ class FaceTracker:
                 tf.tracker.start_track(rgb_frame, rect)
                 tf.last_rect = rect
                 tf.last_center = (cx, cy)
+                if len(tf.center_history) < 300:  # Cap at ~10s of history
+                    tf.center_history.append((cx, cy))
                 tf.active = True
                 tf.frames_since_inactive = 0
                 tf.frames_visible += 1
@@ -359,8 +380,14 @@ class FaceTracker:
 
             self._update_person_timing(tf.person, timestamp)
 
-            # Update thumbnail
-            face_crop = frame[rect_top:rect_bottom, rect_left:rect_right]
+            # Update thumbnail with padding
+            rw, rh = rect_right - rect_left, rect_bottom - rect_top
+            rpx, rpy = int(rw * 0.3), int(rh * 0.2)
+            ct1 = max(0, rect_top - rpy)
+            cb1 = min(frame.shape[0], rect_bottom + rpy)
+            cl1 = max(0, rect_left - rpx)
+            cr1 = min(frame.shape[1], rect_right + rpx)
+            face_crop = frame[ct1:cb1, cl1:cr1]
             tf.person.face_thumbnail = self._make_thumbnail(face_crop)
 
             output.append((tf.person, eye_landmarks, all_landmarks))
@@ -607,8 +634,13 @@ class FaceTracker:
         person.last_seen_at = timestamp
 
     @staticmethod
+    @staticmethod
     def _make_thumbnail(face_crop: np.ndarray) -> np.ndarray:
-        """Resize face crop to 64x64 thumbnail."""
+        """Resize face crop to 128x128 thumbnail with padding."""
         if face_crop.size == 0:
-            return np.zeros((64, 64, 3), dtype=np.uint8)
-        return cv2.resize(face_crop, (64, 64), interpolation=cv2.INTER_AREA)
+            return np.zeros((128, 128, 3), dtype=np.uint8)
+        h, w = face_crop.shape[:2]
+        # Add 30% padding around the face for a nicer portrait crop
+        pad_x, pad_y = int(w * 0.3), int(h * 0.3)
+        # We can't pad beyond what was cropped, so just resize what we have
+        return cv2.resize(face_crop, (128, 128), interpolation=cv2.INTER_AREA)

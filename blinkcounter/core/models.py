@@ -66,6 +66,7 @@ class Person:
     last_seen_at: float = 0.0
     total_visible_duration: float = 0.0  # Total seconds on screen
     analyzable_duration: float = 0.0  # Seconds where detection quality was sufficient
+    is_still_image: bool = False  # True if face barely moved (likely a static photo)
 
     @property
     def blink_count(self) -> int:

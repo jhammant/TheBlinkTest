@@ -88,7 +88,7 @@ def estimate_head_pose(shape_points: np.ndarray) -> dict:
     return {"pitch_ratio": pitch_ratio, "yaw_ratio": yaw_ratio}
 
 
-def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.50, yaw_threshold: float = 0.6) -> bool:
+def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.40, yaw_threshold: float = 0.5) -> bool:
     """Check if face is frontal enough for reliable EAR measurement.
 
     Args:
@@ -99,7 +99,7 @@ def is_face_frontal(head_pose: dict, pitch_threshold: float = 0.50, yaw_threshol
     return head_pose["pitch_ratio"] >= pitch_threshold and head_pose["yaw_ratio"] >= yaw_threshold
 
 
-QUALITY_THRESHOLD = 0.3  # Below this, skip the frame for blink detection
+QUALITY_THRESHOLD = 0.2  # Below this, skip the frame for blink detection
 
 
 def calculate_detection_quality(
@@ -227,7 +227,7 @@ class BlinkStateMachine:
             # Good subjects: CV=0.05-0.13, Bad subjects: CV=0.26+
             # Threshold 0.20 catches worst outliers without hurting real blinkers
             cv = ear_std / ear_mean if ear_mean > 0.05 else 0
-            self._is_noisy = cv > 0.20
+            self._is_noisy = cv > 0.30
 
         if self._is_noisy:
             if self.state != EyeState.OPEN:
@@ -270,7 +270,7 @@ class BlinkStateMachine:
         # Note: MEAR (midpoint of closed/open) was tested but caused overcounting
         # due to threshold drift. Proportional approach is more stable.
         close_threshold = self._baseline_ear * 0.75
-        close_threshold = max(0.15, min(0.25, close_threshold))  # floor/cap
+        close_threshold = max(0.12, min(0.25, close_threshold))  # floor/cap
         open_threshold = self._baseline_ear * 0.85  # Need to rise back to 85% of baseline
 
         # Update baseline with open-eye EAR values (use 75th percentile)
