@@ -5,21 +5,11 @@ Normal blink rate: 15-20 blinks/min.
 
 | # | Name | Avg BPM | Classification | Videos | Notes |
 |---|------|---------|---------------|--------|-------|
-| 1 | Emmanuel Macron | 8.8 | Very Low | 2 | Significantly below normal |
-| 2 | Justin Trudeau | 11.0 | Low | 2 | Below normal |
-| 3 | Joe Biden | 11.1 | Low | 2 | Below normal |
-| 4 | Tim Cook | 12.0 | Low | 2 | Below normal |
-| 5 | Barack Obama | 12.2 | Low | 2 | Below normal |
-| 6 | Volodymyr Zelenskyy | 12.3 | Low | 2 | Below normal |
-| 7 | Jacinda Ardern | 14.1 | Low | 2 | Below normal |
-| 8 | Sundar Pichai | 15.0 | Low | 2 |  |
-| 9 | Mark Zuckerberg | 15.2 | Normal | 2 |  |
-| 10 | Narendra Modi | 17.1 | Normal | 2 |  |
-| 11 | Jensen Huang | 18.4 | Normal | 2 |  |
-| 12 | Angela Merkel | 19.5 | Normal | 2 |  |
-| 13 | Boris Johnson | 19.9 | Normal | 2 |  |
-| 14 | Satya Nadella | 21.6 | High | 2 |  |
-| 15 | Vladimir Putin | 29.3 | High | 2 | Above normal |
+| 1 | Joe Biden | 14.6 | Low | 4 | Below normal |
+| 2 | Angela Merkel | 17.0 | Normal | 4 |  |
+| 3 | Barack Obama | 17.7 | Normal | 4 |  |
+| 4 | Boris Johnson | 21.5 | High | 4 |  |
+| 5 | Vladimir Putin | 28.2 | High | 4 | Above normal |
 
 ---
 

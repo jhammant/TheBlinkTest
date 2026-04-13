@@ -1,8 +1,8 @@
 {
   "Barack Obama": {
-    "avg_bpm": 12.2,
-    "classification": "Low",
-    "videos_analyzed": 2,
+    "avg_bpm": 17.7,
+    "classification": "Normal",
+    "videos_analyzed": 4,
     "per_video": [
       {
         "title": "President Barack Obama in Conversation with Marc Maron | WTF",
@@ -12,18 +12,32 @@
         "analyzable_s": 75.78411745078411
       },
       {
-        "title": "Barack Obama BREAKS SILENCE on Trump's ape video, Bad Bunny,",
-        "blinks": 23,
-        "bpm": 15.69586337760911,
-        "classification": "Normal",
-        "analyzable_s": 87.92125458792125
+        "title": "Barack Obama shares personal stories & experiences: Family, ",
+        "blinks": 47,
+        "bpm": 25.144038676087774,
+        "classification": "High",
+        "analyzable_s": 112.15382048715378
+      },
+      {
+        "title": "I asked President Obama if he's DEPRESSED!?",
+        "blinks": 41,
+        "bpm": 25.64389565217392,
+        "classification": "High",
+        "analyzable_s": 95.92926259592923
+      },
+      {
+        "title": "Barack Obama's 2006 Interview | Late Night with Conan O\u2019Brie",
+        "blinks": 22,
+        "bpm": 11.248336650554439,
+        "classification": "Low",
+        "analyzable_s": 117.3506840173508
       }
     ]
   },
   "Joe Biden": {
-    "avg_bpm": 11.1,
+    "avg_bpm": 14.6,
     "classification": "Low",
-    "videos_analyzed": 2,
+    "videos_analyzed": 4,
     "per_video": [
       {
         "title": "VP Joe Biden: We own the finish line",
@@ -38,13 +52,27 @@
         "bpm": 6.001780085295753,
         "classification": "Very Low",
         "analyzable_s": 179.94661327994663
+      },
+      {
+        "title": "FULL REMARKS: Former President Joe Biden pays tribute to Jes",
+        "blinks": 48,
+        "bpm": 15.220172809028917,
+        "classification": "Normal",
+        "analyzable_s": 189.222555889216
+      },
+      {
+        "title": "President-elect Joe Biden's victory speech in full",
+        "blinks": 60,
+        "bpm": 20.818875780707835,
+        "classification": "High",
+        "analyzable_s": 172.92000000000007
       }
     ]
   },
   "Vladimir Putin": {
-    "avg_bpm": 29.3,
+    "avg_bpm": 28.2,
     "classification": "High",
-    "videos_analyzed": 2,
+    "videos_analyzed": 4,
     "per_video": [
       {
         "title": "Exclusive: Tucker Carlson Interviews Vladimir Putin",
@@ -59,13 +87,27 @@
         "bpm": 20.952808988764055,
         "classification": "High",
         "analyzable_s": 160.3603603603603
+      },
+      {
+        "title": "'Trump harbors an unexplained sympathy for Vladimir Putin', ",
+        "blinks": 118,
+        "bpm": 42.37491022264783,
+        "classification": "High",
+        "analyzable_s": 167.08
+      },
+      {
+        "title": "Vladimir Putin interviewed by the Financial Times | FT",
+        "blinks": 23,
+        "bpm": 11.702849389416553,
+        "classification": "Low",
+        "analyzable_s": 117.92000000000002
       }
     ]
   },
   "Angela Merkel": {
-    "avg_bpm": 19.5,
+    "avg_bpm": 17.0,
     "classification": "Normal",
-    "videos_analyzed": 2,
+    "videos_analyzed": 4,
     "per_video": [
       {
         "title": "Extended interview: Angela Merkel",
@@ -80,13 +122,27 @@
         "bpm": 23.90791027154661,
         "classification": "High",
         "analyzable_s": 135.52000000000015
+      },
+      {
+        "title": "Merkel on May's Brexit plan: 'I'm not frustrated but curious",
+        "blinks": 9,
+        "bpm": 17.833553500660507,
+        "classification": "Normal",
+        "analyzable_s": 30.27999999999999
+      },
+      {
+        "title": "The DW Interview with German Chancellor Angela Merkel | DW N",
+        "blinks": 29,
+        "bpm": 10.965465086967486,
+        "classification": "Low",
+        "analyzable_s": 158.67999999999992
       }
     ]
   },
   "Boris Johnson": {
-    "avg_bpm": 19.9,
-    "classification": "Normal",
-    "videos_analyzed": 2,
+    "avg_bpm": 21.5,
+    "classification": "High",
+    "videos_analyzed": 4,
     "per_video": [
       {
         "title": "FULL INTERVIEW: Boris Johnson uncut and unleashed | 60 Minut",
@@ -101,216 +157,20 @@
         "bpm": 24.060494958753484,
         "classification": "High",
         "analyzable_s": 174.55999999999966
-      }
-    ]
-  },
-  "Jacinda Ardern": {
-    "avg_bpm": 14.1,
-    "classification": "Low",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "Jacinda Ardern's Kiwi Accent Is Easily Understood In Boston",
-        "blinks": 26,
-        "bpm": 16.9395652173913,
-        "classification": "Normal",
-        "analyzable_s": 92.09209209209212
       },
       {
-        "title": "Jacinda Ardern Wanted To Be A Hobbit | The Graham Norton Sho",
-        "blinks": 11,
-        "bpm": 11.216859279401769,
-        "classification": "Low",
-        "analyzable_s": 58.839999999999996
-      }
-    ]
-  },
-  "Emmanuel Macron": {
-    "avg_bpm": 8.8,
-    "classification": "Very Low",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "FULL INTERVIEW: French President Emmanuel Macron on Brexit a",
-        "blinks": 21,
-        "bpm": 16.83591662212729,
-        "classification": "Normal",
-        "analyzable_s": 74.83999999999963
-      },
-      {
-        "title": "Emmanuel Macron interview (English): Getting \u201ctough\u201d on Brex",
-        "blinks": 1,
-        "bpm": 0.8008542445274961,
-        "classification": "Very Low",
-        "analyzable_s": 74.91999999999999
-      }
-    ]
-  },
-  "Justin Trudeau": {
-    "avg_bpm": 11.0,
-    "classification": "Low",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "Qui gagnera : Justin Trudeau ou Da\u2019 Bomb? | Hot Ones Qu\u00e9bec",
-        "blinks": 27,
-        "bpm": 16.23246492985972,
-        "classification": "Normal",
-        "analyzable_s": 99.80000000000001
-      },
-      {
-        "title": "Justin Trudeau Interview with Peter Mansbridge",
-        "blinks": 11,
-        "bpm": 5.831426886792439,
-        "classification": "Very Low",
-        "analyzable_s": 113.17984651318011
-      }
-    ]
-  },
-  "Narendra Modi": {
-    "avg_bpm": 17.1,
-    "classification": "Normal",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "PM Modi Interview | \"I Hold Such A Position...\": PM On Handl",
-        "blinks": 6,
-        "bpm": 6.2413314840499305,
-        "classification": "Very Low",
-        "analyzable_s": 57.68
-      },
-      {
-        "title": "Frankly Speaking with Narendra Modi - Full Interview",
-        "blinks": 91,
-        "bpm": 27.86282914880635,
+        "title": "In full: Boris Johnson interview  - BBC News",
+        "blinks": 44,
+        "bpm": 27.59197324414716,
         "classification": "High",
-        "analyzable_s": 195.95999999999665
-      }
-    ]
-  },
-  "Volodymyr Zelenskyy": {
-    "avg_bpm": 12.3,
-    "classification": "Low",
-    "videos_analyzed": 2,
-    "per_video": [
+        "analyzable_s": 95.67999999999999
+      },
       {
-        "title": "President of Ukraine: Volodymyr Zelenskyy",
-        "blinks": 36,
-        "bpm": 15.397775876817796,
+        "title": "Whether Boris Johnson is attempting to salvage his political",
+        "blinks": 43,
+        "bpm": 18.674001158077587,
         "classification": "Normal",
-        "analyzable_s": 140.27999999999997
-      },
-      {
-        "title": "Exclusive: Zelenskyy describes Russian intelligence sharing ",
-        "blinks": 14,
-        "bpm": 9.224926777143704,
-        "classification": "Very Low",
-        "analyzable_s": 91.05763333333334
-      }
-    ]
-  },
-  "Mark Zuckerberg": {
-    "avg_bpm": 15.2,
-    "classification": "Normal",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "Joe Rogan Experience #2255 - Mark Zuckerberg",
-        "blinks": 38,
-        "bpm": 14.88705882352943,
-        "classification": "Low",
-        "analyzable_s": 153.15315315315297
-      },
-      {
-        "title": "The Future Mark Zuckerberg Is Trying To Build",
-        "blinks": 20,
-        "bpm": 15.443478260869565,
-        "classification": "Normal",
-        "analyzable_s": 77.7027027027027
-      }
-    ]
-  },
-  "Tim Cook": {
-    "avg_bpm": 12.0,
-    "classification": "Low",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "Extended interview: Tim Cook",
-        "blinks": 29,
-        "bpm": 11.713342318059302,
-        "classification": "Low",
-        "analyzable_s": 148.5485485485485
-      },
-      {
-        "title": "Apple CEO Tim Cook on iPhone 17 launch: It's the most import",
-        "blinks": 23,
-        "bpm": 12.323778307508944,
-        "classification": "Low",
-        "analyzable_s": 111.97864531197861
-      }
-    ]
-  },
-  "Satya Nadella": {
-    "avg_bpm": 21.6,
-    "classification": "High",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "The Advice That Changed Satya Nadella's Life",
-        "blinks": 79,
-        "bpm": 30.393196405648276,
-        "classification": "High",
-        "analyzable_s": 155.95595595595591
-      },
-      {
-        "title": "Satya Nadella \u2013 How Microsoft thinks about AGI",
-        "blinks": 17,
-        "bpm": 12.824079706345033,
-        "classification": "Low",
-        "analyzable_s": 79.53787120453794
-      }
-    ]
-  },
-  "Sundar Pichai": {
-    "avg_bpm": 15.0,
-    "classification": "Low",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "The history and future of AI at Google, with Sundar Pichai",
-        "blinks": 23,
-        "bpm": 10.140018387986517,
-        "classification": "Low",
-        "analyzable_s": 136.0944277610944
-      },
-      {
-        "title": "Full interview: Google CEO Sundar Pichai on the \u2018AI boom\u2019 an",
-        "blinks": 49,
-        "bpm": 19.822006472491893,
-        "classification": "Normal",
-        "analyzable_s": 148.3200000000001
-      }
-    ]
-  },
-  "Jensen Huang": {
-    "avg_bpm": 18.4,
-    "classification": "Normal",
-    "videos_analyzed": 2,
-    "per_video": [
-      {
-        "title": "NVIDIA CEO Jensen Huang's Vision for the Future",
-        "blinks": 15,
-        "bpm": 18.042140468227412,
-        "classification": "Normal",
-        "analyzable_s": 49.88321654988326
-      },
-      {
-        "title": "Jensen Huang: NVIDIA - The $4 Trillion Company & the AI Revo",
-        "blinks": 21,
-        "bpm": 18.8528207688467,
-        "classification": "Normal",
-        "analyzable_s": 66.8335001668336
+        "analyzable_s": 138.16000000000003
       }
     ]
   }
