@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "theblinktest"
-version = "0.2.0"
+version = "0.2.1"
 description = "Analyze blink rates in videos to detect anomalous blinking patterns. Supports YouTube URLs and local video files."
 readme = "README.md"
 license = {text = "MIT"}
