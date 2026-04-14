@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 _CACHE_DIR = Path.home() / ".cache" / "blinkcounter" / "videos"
 
 
+def get_cookies_from_browser() -> Optional[tuple]:
+    """Return a yt-dlp cookiesfrombrowser tuple.
+
+    Defaults to ("chrome",) so YouTube doesn't block requests as bot traffic.
+    Override via BLINKCOUNTER_COOKIES_BROWSER (e.g. safari, firefox, edge,
+    brave, chromium, opera, vivaldi, whale). Set to "none" to disable.
+    """
+    browser = os.environ.get("BLINKCOUNTER_COOKIES_BROWSER", "chrome").strip().lower()
+    if not browser or browser == "none":
+        return None
+    return (browser,)
+
+
 def _get_cache_path(url: str) -> Path:
     """Get cache file path for a URL."""
     url_hash = hashlib.md5(url.encode()).hexdigest()[:12]
@@ -84,7 +97,13 @@ def download_video(
         "progress_hooks": [_progress_hook],
         "quiet": True,
         "no_warnings": True,
+        # YouTube's JS challenge — fetch the solver script from yt-dlp's GitHub.
+        "remote_components": ["ejs:github"],
     }
+
+    cookies = get_cookies_from_browser()
+    if cookies:
+        ydl_opts["cookiesfrombrowser"] = cookies
 
     if progress_callback:
         progress_callback(0.0, "Starting download...")

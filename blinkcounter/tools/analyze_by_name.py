@@ -34,6 +34,7 @@ def search_youtube(query: str, max_results: int = 5) -> list[dict]:
     Returns list of dicts with 'title', 'url', 'duration' keys.
     """
     import yt_dlp
+    from blinkcounter.services.youtube import get_cookies_from_browser
 
     ydl_opts = {
         "quiet": True,
@@ -41,9 +42,16 @@ def search_youtube(query: str, max_results: int = 5) -> list[dict]:
         "ignoreerrors": True,
         "simulate": True,
         "cachedir": False,
+        "extract_flat": "in_playlist",
+        "remote_components": ["ejs:github"],
     }
+    cookies = get_cookies_from_browser()
+    if cookies:
+        ydl_opts["cookiesfrombrowser"] = cookies
 
     full_name_lower = query.lower().strip()
+    # Also match with spaces removed (e.g. "Mr Beast" -> "mrbeast")
+    name_nospace = "".join(full_name_lower.split())
 
     # Search with multiple queries to maximise coverage
     search_queries = [
@@ -70,27 +78,35 @@ def search_youtube(query: str, max_results: int = 5) -> list[dict]:
                 continue
 
             for entry in results.get("entries", []):
-                if not entry or entry.get("duration", 0) < 120:
+                if not entry or (entry.get("duration") or 0) < 120:
                     continue  # Skip videos under 2 min — too short for reliable rates
-                url = entry.get("webpage_url", "")
+                url = entry.get("webpage_url") or entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id', '')}"
                 if url in seen_urls:
                     continue
                 seen_urls.add(url)
 
-                title_lower = entry.get("title", "").lower()
-                desc_lower = entry.get("description", "").lower()
+                title_lower = (entry.get("title") or "").lower()
+                desc_lower = (entry.get("description") or "").lower()
 
-                # Check for full name as a phrase in title or description
-                in_title = full_name_lower in title_lower
-                in_desc = full_name_lower in desc_lower
+                title_nospace = "".join(title_lower.split())
+                desc_nospace = "".join(desc_lower.split())
 
+                # Check for full name as a phrase in title or description (with or without spaces)
+                in_title = full_name_lower in title_lower or name_nospace in title_nospace
+                in_desc = full_name_lower in desc_lower or name_nospace in desc_nospace
+
+                # If description is unavailable (extract_flat mode), trust YouTube's search
+                # ranking — the query already filtered for relevance.
+                has_desc = bool(desc_lower)
                 if not in_title and not in_desc:
-                    continue
+                    if has_desc:
+                        continue  # Description was there but name not mentioned — skip
 
                 # Prefer longer videos (more data = more reliable rate)
-                dur = entry.get("duration", 0)
+                dur = entry.get("duration") or 0
                 duration_bonus = min(dur / 300, 2.0)  # Up to 2.0 for 10min+
                 score = (3 if in_title else 0) + (1 if in_desc else 0) + duration_bonus
+                entry["webpage_url"] = url
                 scored.append((score, entry))
 
     # Sort by score (best matches first) and take top results
@@ -99,8 +115,8 @@ def search_youtube(query: str, max_results: int = 5) -> list[dict]:
     for _, entry in scored[:max_results]:
         videos.append({
             "title": entry.get("title", "Unknown"),
-            "url": entry.get("webpage_url", ""),
-            "duration": entry.get("duration", 0),
+            "url": entry.get("webpage_url") or entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id', '')}",
+            "duration": int(entry.get("duration") or 0),
         })
 
     return videos
@@ -250,7 +266,16 @@ def main() -> None:
         "--frame-skip", type=int, default=1,
         help="Process every Nth frame. 1=every frame (accurate), 2=2x faster, 3=3x faster (default: 1)",
     )
+    parser.add_argument(
+        "--cookies-from-browser", default=None,
+        help="Browser to load YouTube cookies from (chrome, safari, firefox, edge, brave). "
+             "Required when YouTube returns 'Sign in to confirm you're not a bot'. "
+             "Also settable via BLINKCOUNTER_COOKIES_BROWSER env var.",
+    )
     args = parser.parse_args()
+
+    if args.cookies_from_browser:
+        os.environ["BLINKCOUNTER_COOKIES_BROWSER"] = args.cookies_from_browser
 
     print(f"\n{'='*60}")
     print(f"  BLINK RATE ANALYSIS: {args.name}")
